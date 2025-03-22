@@ -17,7 +17,7 @@ datasource db {
 model User {
   id             String   @id @default(uuid()) @db.Uuid
   email          String   @unique
-  passwordHash   String
+  passwordHash   String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   isActive       Boolean  @default(true)
@@ -34,13 +34,15 @@ model OAuthProvider {
   id                String   @id @default(uuid()) @db.Uuid
   userId            String   @db.Uuid
   provider          String
-  providerUserId    String
+  providerUserId    String   
   accessToken       String?
   refreshToken      String?
   expiresAt         DateTime?
 
   // Relations
   user              User     @relation(fields: [userId], references: [id])
+
+  @@unique([provider, providerUserId]) // Định nghĩa unique constraint trên cặp trường provider và providerUserId
 }
 
 // PasswordResetToken model

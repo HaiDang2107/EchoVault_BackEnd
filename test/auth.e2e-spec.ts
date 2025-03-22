@@ -22,8 +22,8 @@ describe('AuthController (e2e)', () => {
   });
 
   const user: AuthDto = {
-    email: 'testsec@example.com',
-    password: 'Test123456',
+    email: 'testthỉd@example.com',
+    password: 'Te3456',
   };
 
   let accessToken: string;
