@@ -1,8 +1,4 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
   provider = "prisma-client-js"
@@ -27,6 +23,8 @@ model User {
   oauthProviders  OAuthProvider[]
   passwordResetTokens PasswordResetToken[]
   userSessions    UserSession[]
+  capsuleContributors CapsuleContributor[]
+  capsuleViewers      CapsuleViewer[]
 }
 
 // OAuthProvider model
@@ -69,4 +67,55 @@ model UserSession {
 
   // Relations
   user        User     @relation(fields: [userId], references: [id])
+}
+
+
+//CapsuleModel
+
+model Capsule {
+  id                     String   @id @default(uuid()) @db.Uuid
+  userId                 String   @db.Uuid
+  openingTime            DateTime // The specific time when the capsule can be opened
+  content                String   // Content of the capsule (text)
+  imageUrls              Json     // Array of image URLs (max 4 images)
+  theme                  String   // Background theme of the capsule
+  description            String   // Description of the capsule
+  notificationInterval   Int      // Time interval (in minutes) for notifications
+  status                 String   @default("Locked") // Status of the capsule
+  createdAt              DateTime @default(now()) // Timestamp of capsule creation
+  updatedAt              DateTime @default(now()) // Timestamp of last update
+
+  // Relations
+  contributors           CapsuleContributor[] // Relation to contributors
+  viewers                CapsuleViewer[] // Relation to viewers
+  recallQuestions        RecallQuestion[] // Relation to recall questions
+}
+
+model CapsuleContributor {
+  id         String   @id @default(uuid()) @db.Uuid
+  capsuleId  String   @db.Uuid
+  userId     String   @db.Uuid
+
+  // Relationscapsule     Capsule @relation(fields: [capsuleId], references: [id])
+  capsule    Capsule  @relation(fields: [capsuleId], references: [id])
+  user        User    @relation(fields: [userId], references: [id])
+}
+
+model CapsuleViewer {
+  id         String   @id @default(uuid()) @db.Uuid
+  capsuleId  String   @db.Uuid
+  userId     String   @db.Uuid
+
+  // Relations
+  capsule     Capsule @relation(fields: [capsuleId], references: [id])
+  user        User    @relation(fields: [userId], references: [id])
+}
+
+model RecallQuestion {
+  id         String   @id @default(uuid()) @db.Uuid
+  capsuleId  String   @db.Uuid
+  question   String   @db.Text // The recall question to be answered
+
+  // Relations
+  capsule     Capsule @relation(fields: [capsuleId], references: [id])
 }

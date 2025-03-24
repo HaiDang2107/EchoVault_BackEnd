@@ -102,6 +102,9 @@ async function main() {
 main();
 ```
 
+Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+
 ![Prisma Logo](https://www.prisma.io/images/logo.svg)
 
 ---
