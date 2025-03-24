@@ -1,0 +1,129 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model
+model User {
+  user_id         Int   @id @default(autoincrement())
+  email           String   @unique
+  password_hash   String
+  fullname        String
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+  isActive        Boolean  @default(true)
+  user_role       String   @default("user")
+
+  // Relations
+  oauthProviders      OAuthProvider[]
+  passwordResetTokens PasswordResetToken[]
+  userSessions        UserSession[]
+}
+
+// OAuthProvider model
+model OAuthProvider {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @db.Uuid
+  provider          String
+  providerUserId    String
+  accessToken       String?
+  refreshToken      String?
+  expiresAt         DateTime?
+
+  // Relations
+  user              User     @relation(fields: [userId], references: [id])
+}
+
+// PasswordResetToken model
+model PasswordResetToken {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  token       String   @unique
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime?
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+// UserSession model
+model UserSession {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  sessionToken String   @unique
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime?
+  ipAddress   String?
+  userAgent   String?
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+// time_capsules model
+model time_capsules {
+  capsule_id                 Int       @id @default(autoincrement())
+  creator                    User      @relation("CreatorCapsules", fields: [creator_id], references: [user_id])
+  creator_id                 String    @db.Uuid
+  title                      String
+  capsule_description        String?
+  scheduled_open_time        DateTime
+  is_shared                  Boolean   @default(false)
+  is_opened                  Boolean   @default(false)
+  theme_suggestion           String?
+  created_at                 DateTime  @default(now())
+  updated_at                 DateTime  @updatedAt
+
+  // Relations
+  contents           CapsuleContent[]
+  comments           CapsuleComment[]
+  questions          RecallQuestion[]
+  reports            ReportedContent[]
+  logs               Log[]
+}
+
+// capsule_comments model
+model capsule_comments {
+  comment_id    Int       @id @default(autoincrement())
+  user          User      @relation(fields: [user_id], references: [user_id])
+  user_id       String    @db.Uuid
+  capsule       TimeCapsule @relation(fields: [capsule_id], references: [capsule_id])
+  capsule_id    Int
+  comment_text  String
+  created_at    DateTime  @default(now())
+}
+
+// reported_contents model
+model reported_content {
+  report_id              Int       @id @default(autoincrement())
+  user                   User      @relation("UserReports", fields: [user_id], references: [user_id])
+  user_id                String    @db.Uuid
+  capsule                TimeCapsule @relation(fields: [capsule_id], references: [capsule_id])
+  capsule_id             Int
+  reason                 String
+  reported_status        String    @default("pending")
+  admin                  User?     @relation("AdminManagedReports", fields: [admin_id], references: [user_id])
+  admin_id               String?   @db.Uuid
+  created_at             DateTime  @default(now())
+}
+
+// logs model
+model logs {
+  log_id          Int       @id @default(autoincrement())
+  user            User?     @relation(fields: [user_id], references: [user_id])
+  user_id         String?   @db.Uuid
+  capsule         TimeCapsule? @relation(fields: [capsule_id], references: [capsule_id])
+  capsule_id      Int?
+  log_action      String
+  log_timestamp   DateTime  @default(now())
+}
