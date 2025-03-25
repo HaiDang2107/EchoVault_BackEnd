@@ -1,5 +1,3 @@
-
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,111 +9,131 @@ datasource db {
 
 // User model
 model User {
-  id             String   @id @default(uuid()) @db.Uuid
-  email          String   @unique
-  passwordHash   String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  isActive       Boolean  @default(true)
-  role           String   @default("user")
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  passwordHash String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  isActive     Boolean  @default(true)
+  role         String   @default("user")
 
   // Relations
-  oauthProviders  OAuthProvider[]
+  oauthProviders      OAuthProvider[]
   passwordResetTokens PasswordResetToken[]
-  userSessions    UserSession[]
+  userSessions        UserSession[]
   capsuleContributors CapsuleContributor[]
   capsuleViewers      CapsuleViewer[]
+  friends             Friend[]             @relation("UserFriends")
+  userFriend          Friend[]             @relation("FriendsOfUser")
 }
 
 // OAuthProvider model
 model OAuthProvider {
-  id                String   @id @default(uuid()) @db.Uuid
-  userId            String   @db.Uuid
-  provider          String
-  providerUserId    String   
-  accessToken       String?
-  refreshToken      String?
-  expiresAt         DateTime?
+  id             String    @id @default(uuid()) @db.Uuid
+  userId         String    @db.Uuid
+  provider       String
+  providerUserId String
+  accessToken    String?
+  refreshToken   String?
+  expiresAt      DateTime?
 
   // Relations
-  user              User     @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 
   @@unique([provider, providerUserId]) // Định nghĩa unique constraint trên cặp trường provider và providerUserId
 }
 
 // PasswordResetToken model
 model PasswordResetToken {
-  id          String   @id @default(uuid()) @db.Uuid
-  userId      String   @db.Uuid
-  token       String   @unique
-  createdAt   DateTime @default(now())
-  expiresAt   DateTime?
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  token     String    @unique
+  createdAt DateTime  @default(now())
+  expiresAt DateTime?
 
   // Relations
-  user        User     @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 }
 
 // UserSession model
 model UserSession {
-  id          String   @id @default(uuid()) @db.Uuid
-  userId      String   @db.Uuid
-  sessionToken String   @unique
-  createdAt   DateTime @default(now())
-  expiresAt   DateTime?
-  ipAddress   String?
-  userAgent   String?
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @db.Uuid
+  sessionToken String    @unique
+  createdAt    DateTime  @default(now())
+  expiresAt    DateTime?
+  ipAddress    String?
+  userAgent    String?
 
   // Relations
-  user        User     @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 }
 
+//Friend model
+model Friend {
+  id       String @id @default(uuid()) @db.Uuid
+  userId   String @db.Uuid
+  friendId String @db.Uuid
+
+  // Relations
+  user   User @relation("UserFriends", fields: [userId], references: [id])
+  friend User @relation("FriendsOfUser", fields: [friendId], references: [id])
+
+  @@unique([userId, friendId])
+}
 
 //CapsuleModel
 
 model Capsule {
-  id                     String   @id @default(uuid()) @db.Uuid
-  userId                 String   @db.Uuid
-  openingTime            DateTime // The specific time when the capsule can be opened
-  content                String   // Content of the capsule (text)
-  imageUrls              Json     // Array of image URLs (max 4 images)
-  theme                  String   // Background theme of the capsule
-  description            String   // Description of the capsule
-  notificationInterval   Int      // Time interval (in minutes) for notifications
-  status                 String   @default("Locked") // Status of the capsule
-  createdAt              DateTime @default(now()) // Timestamp of capsule creation
-  updatedAt              DateTime @default(now()) // Timestamp of last update
+  id                   String   @id @default(uuid()) @db.Uuid
+  userId               String   @db.Uuid
+  privacy              String   @default("Public")
+  openingTime          DateTime // The specific time when the capsule can be opened
+  content              String // Content of the capsule (text)
+  imageUrls            Json // Array of image URLs (max 4 images)
+  theme                String // Background theme of the capsule
+  description          String // Description of the capsule
+  notificationInterval Int // Time interval (in minutes) for notifications
+  status               String   @default("Locked") // Status of the capsule
+  createdAt            DateTime @default(now()) // Timestamp of capsule creation
+  updatedAt            DateTime @default(now()) // Timestamp of last update
 
   // Relations
-  contributors           CapsuleContributor[] // Relation to contributors
-  viewers                CapsuleViewer[] // Relation to viewers
-  recallQuestions        RecallQuestion[] // Relation to recall questions
+  contributors    CapsuleContributor[] // Relation to contributors
+  viewers         CapsuleViewer[] // Relation to viewers
+  recallQuestions RecallQuestion[] // Relation to recall questions
 }
 
 model CapsuleContributor {
-  id         String   @id @default(uuid()) @db.Uuid
-  capsuleId  String   @db.Uuid
-  userId     String   @db.Uuid
+  id        String @id @default(uuid()) @db.Uuid
+  capsuleId String @db.Uuid
+  userId    String @db.Uuid
 
   // Relationscapsule     Capsule @relation(fields: [capsuleId], references: [id])
-  capsule    Capsule  @relation(fields: [capsuleId], references: [id])
-  user        User    @relation(fields: [userId], references: [id])
+  capsule Capsule @relation(fields: [capsuleId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
 }
 
 model CapsuleViewer {
-  id         String   @id @default(uuid()) @db.Uuid
-  capsuleId  String   @db.Uuid
-  userId     String   @db.Uuid
+  id        String @id @default(uuid()) @db.Uuid
+  capsuleId String @db.Uuid
+  userId    String @db.Uuid
 
   // Relations
-  capsule     Capsule @relation(fields: [capsuleId], references: [id])
-  user        User    @relation(fields: [userId], references: [id])
+  capsule Capsule @relation(fields: [capsuleId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
 }
 
 model RecallQuestion {
-  id         String   @id @default(uuid()) @db.Uuid
-  capsuleId  String   @db.Uuid
-  question   String   @db.Text // The recall question to be answered
-
+  id            String  @id @default(uuid()) @db.Uuid
+  capsuleId     String  @db.Uuid
+  question      String  @db.Text // The recall question to be answered
+  choicesA      String  @db.Text // The answer A
+  choicesB      String  @db.Text // The answer B
+  choicesC      String  @db.Text // The answer C
+  choicesD      String  @db.Text // The answer D
+  correctAnswer String  @db.Text // The correct answer
+  explaination  String  @db.Text // The explaination
   // Relations
-  capsule     Capsule @relation(fields: [capsuleId], references: [id])
+  capsule       Capsule @relation(fields: [capsuleId], references: [id])
 }
