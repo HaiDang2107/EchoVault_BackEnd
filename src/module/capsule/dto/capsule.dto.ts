@@ -9,11 +9,6 @@ export class NewCapsuleDto {
     @IsNotEmpty()
     content!: string; // The main content of the capsule
 
-    @IsOptional()
-    @IsArray()
-    @IsString({ each: true })
-    imageUrls?: string[]; // Array of image URLs (max 4 images)
-
     
     @IsNotEmpty()
     @IsArray()
@@ -86,3 +81,28 @@ export class NewRecallQuestionDto{
     explaination?: string; // Explanation of the recall question
 }
 
+export class GiveCommentDto {
+    @IsUUID()
+    capsuleId!: string; // The ID of the capsule being commented on
+  
+    @IsUUID()
+    userId!: string; // The ID of the user giving the comment
+  
+    @IsString()
+    @IsNotEmpty()
+    commentText!: string; // The text of the comment
+}
+
+export class GiveReactionDto {
+    @IsUUID()
+    capsuleId!: string; // The ID of the capsule being reacted to
+  
+    @IsUUID()
+    userId!: string; // The ID of the user giving the reaction
+  
+    @IsString()
+    @IsNotEmpty()
+    reactionType!: string; // The type of reaction (e.g., "like", "love", "laugh")
+}
+
+  
