@@ -3,11 +3,16 @@ import { CapsuleService,  } from './capsule.service';
 import { NewCapsuleDto, GiveCommentDto, GiveReactionDto } from './dto/capsule.dto';
 import { OpenedCapsuleInfoResponseDto, ApiResponseDto } from './dto/response.dto';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
+import { OpenCapsuleService } from './open-capsule.service';
+import { SubmitAnswerDto } from './dto';
 
 @Controller('capsules')
 @UseGuards(JwtAuthGuard)
 export class CapsuleController {
-  constructor(private readonly capsuleService: CapsuleService) {}
+  constructor(
+    private readonly capsuleService: CapsuleService,
+    private readonly openCapsuleService: OpenCapsuleService,
+  ) {}
 
   @Post('createCapsule')
   @HttpCode(HttpStatus.CREATED)
@@ -23,12 +28,6 @@ export class CapsuleController {
     return await this.capsuleService.deleteCapsule(capsuleId, userId);
   }
 
-  @Get('getOpenedCapsule:id')
-  @HttpCode(HttpStatus.OK)
-  async getCapsule(@Param('id') capsuleId: string, @Request() req): Promise<OpenedCapsuleInfoResponseDto> {
-    const userId = req.user.id;
-    return await this.capsuleService.getOpenedCapsuleById(capsuleId, userId);
-  }
 
   @Post('giveComment')
   @HttpCode(HttpStatus.CREATED)
@@ -50,5 +49,65 @@ export class CapsuleController {
     // Attach the userId from the authenticated user
     const userId = req.user.id;
     return await this.capsuleService.giveReaction({ ...dto, userId });
+  }
+
+
+  @Post(':capsuleId/open-request')
+  @HttpCode(HttpStatus.OK)
+  async requestOpenCapsule(
+    @Param('capsuleId') capsuleId: string,
+    @Request() req,
+  ): Promise<ApiResponseDto> {
+    const userId = req.user.id;
+    return await this.openCapsuleService.requestOpenCapsule(capsuleId, userId);
+  }
+
+  @Get(':capsuleId/description')
+  @HttpCode(HttpStatus.OK)
+  async getDescription(
+    @Param('capsuleId') capsuleId: string,
+  ): Promise<ApiResponseDto> {
+    return await this.openCapsuleService.getDescription(capsuleId);
+  }
+
+  @Get(':capsuleId/questions')
+  @HttpCode(HttpStatus.OK)
+  async getQuestions(
+    @Param('capsuleId') capsuleId: string,
+  ): Promise<ApiResponseDto> {
+    return await this.openCapsuleService.getQuestions(capsuleId);
+  }
+
+  @Post(':capsuleId/questions/:questionId/answer')
+  @HttpCode(HttpStatus.OK)
+  async submitAnswer(
+    @Param('questionId') questionId: string,
+    @Body() dto: SubmitAnswerDto,
+  ): Promise<ApiResponseDto> {
+    return await this.openCapsuleService.submitAnswer(dto);
+  }
+
+  @Get(':capsuleId/questions/:questionId/explain')
+  @HttpCode(HttpStatus.OK)
+  async getExplanation(
+    @Param('questionId') questionId: string,
+  ): Promise<ApiResponseDto> {
+    return await this.openCapsuleService.getExplanation(questionId);
+  }
+
+  @Get(':capsuleId/content')
+  @HttpCode(HttpStatus.OK)
+  async getContent(
+    @Param('capsuleId') capsuleId: string,
+  ): Promise<ApiResponseDto> {
+    return await this.openCapsuleService.getOpenedCapsuleById(capsuleId);
+  }
+
+  @Post(':capsuleId/abort')
+  @HttpCode(HttpStatus.OK)
+  async abortOpenCapsule(
+    @Param('capsuleId') capsuleId: string,
+  ): Promise<ApiResponseDto> {
+    return await this.openCapsuleService.abortOpenCapsule(capsuleId);
   }
 }
