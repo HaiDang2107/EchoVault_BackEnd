@@ -19,6 +19,9 @@ import {
   CapsuleNotFoundException,
   CapsuleNotOpenedException,
 } from './exceptions/capsule.exception';
+import {formatInTimeZone} from 'date-fns-tz';
+
+const timeZone = 'Asia/Bangkok'; // GMT+7
 
 @Injectable()
 export class CapsuleService {
@@ -33,7 +36,7 @@ export class CapsuleService {
         description: dto.description,
         notificationInterval: dto.notificationInterval,
         openingTime: dto.openingTime,
-        createdAt: new Date(),
+        createdAt: new Date(formatInTimeZone(new Date(), timeZone, 'yyyy-MM-dd HH:mm:ss')), // Convert to UTC
         status: 'Locked', // Default status
       },
     });
@@ -82,7 +85,7 @@ export class CapsuleService {
         mediaUrl,
         mediaType: this.getMediaType(mediaUrl), // Determine media type (e.g., image, video)
         uploadedBy: userId,
-        uploadedAt: new Date(),
+        uploadedAt: new Date(formatInTimeZone(new Date(), timeZone, 'yyyy-MM-dd HH:mm:ss')), // Convert to UTC
       })),
     });
   }
@@ -139,47 +142,7 @@ export class CapsuleService {
     return { statusCode: 200, message: 'Success' };
   }
 
-  async getOpenedCapsuleById(
-    capsuleId: string,
-    userId: string,
-  ): Promise<OpenedCapsuleInfoResponseDto> {
-    const capsule = await this.prisma.capsule.findUnique({
-      where: { id: capsuleId },
-      include: {
-        contributors: true,
-        viewers: true,
-        recallQuestions: true,
-      },
-    });
-
-    if (!capsule) {
-      throw new CapsuleNotFoundException();
-    }
-
-    if (capsule.status !== 'Opened') {
-      throw new CapsuleNotOpenedException();
-    }
-
-    return {
-      statusCode: 200,
-      message: 'Success',
-      openedCapsule: {
-        id: capsule.id,
-        userId: capsule.userId,
-        content: capsule.content,
-        theme: capsule.theme,
-        description: capsule.description,
-        notificationInterval: capsule.notificationInterval,
-        openingTime: capsule.openingTime,
-        status: capsule.status,
-        contributors: capsule.contributors.map(
-          (contributor) => contributor.userId,
-        ),
-        viewers: capsule.viewers.map((viewer) => viewer.userId),
-        recallQuestions: capsule.recallQuestions,
-      },
-    } as OpenedCapsuleInfoResponseDto;
-  }
+  
 
   async getLockedCapsuleById(
     capsuleId: string,
@@ -257,7 +220,7 @@ export class CapsuleService {
         },
         data: {
           reactionType: dto.reactionType,
-          createdAt: new Date(),
+          createdAt: new Date(formatInTimeZone(new Date(), timeZone, 'yyyy-MM-dd HH:mm:ss')),
         },
       });
   
@@ -273,7 +236,7 @@ export class CapsuleService {
         capsuleId: dto.capsuleId,
         userId: dto.userId,
         reactionType: dto.reactionType,
-        createdAt: new Date(),
+        createdAt: new Date(formatInTimeZone(new Date(), timeZone, 'yyyy-MM-dd HH:mm:ss')),
       },
     });
   

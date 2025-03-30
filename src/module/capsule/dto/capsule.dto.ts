@@ -40,11 +40,19 @@ export class NewCapsuleDto {
     
     @IsNotEmpty()
     @Transform(({ value }) => {
+    if (typeof value === 'string') {
+        // Handle string input (e.g., "19:20 03:30:2025")
         const [time, date] = value.split(' ');
         const [hours, minutes] = time.split(':').map(Number);
         const [month, day, year] = date.split(':').map(Number);
         return new Date(year, month - 1, day, hours, minutes);
-      })
+    } else if (value instanceof Date) {
+        // If the value is already a Date object, return it as-is
+        return value;
+    } else {
+        throw new Error('Invalid openingTime format. Expected a string or Date object.');
+    }
+    })
     openingTime!: Date; // The specific time when the capsule can be opened
 }
 
@@ -104,5 +112,13 @@ export class GiveReactionDto {
     @IsNotEmpty()
     reactionType!: string; // The type of reaction (e.g., "like", "love", "laugh")
 }
+
+export class SubmitAnswerDto {
+    @IsUUID()
+    questionId!: string; // The ID of the question being answered
+  
+    @IsString()
+    answer!: string; // The user's selected answer
+  }
 
   
