@@ -1,9 +1,8 @@
-version: '3.8'
 services:
   postgres-db:
     image: postgres:13
     ports:
-    - 5432:5432
+      - 5432:5432
     environment:
       POSTGRES_USER: trungdung
       POSTGRES_PASSWORD: trungdung2474
@@ -19,9 +18,8 @@ services:
   #     PGADMIN_DEFAULT_EMAIL: trungdung@echovault.com
   #     PGADMIN_DEFAULT_PASSWORD: trungdung2474
   #   ports:
-  #     - "5050:80"
+  #     - '5050:80'
   #   networks:
   #     - Echovault-Network
-
 networks:
   EchoVault-Network:
