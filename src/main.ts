@@ -9,6 +9,10 @@ async function bootstrap() {
       whitelist: true,
     }),
   );
-  await app.listen(3333);
+  // Lắng nghe cổng từ biến môi trường PORT (Render cung cấp)
+  const port = process.env.PORT || 3333;
+
+  // Bắt buộc phải dùng 0.0.0.0 thay vì localhost
+  await app.listen(port, '0.0.0.0');
 }
 bootstrap();
