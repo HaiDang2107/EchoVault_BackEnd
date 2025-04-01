@@ -7,31 +7,35 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User model
 model User {
-  id           String   @id @default(uuid()) @db.Uuid
-  email        String   @unique
-  passwordHash String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  isActive     Boolean  @default(true)
-  role         String   @default("user")
+  id                  String               @id @default(uuid()) @db.Uuid
+  email               String               @unique
+  displayName         String?              // Added: User-friendly name
+  avatar              String?              // Added: Profile image URL
+  timezone            String?
+  passwordHash        String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  isActive            Boolean              @default(true)
+  role                String               @default("user")
 
-  // Relations
+  //Reactions
+  comments            CapsuleComments[]
+  capsuleContributors CapsuleContributor[]
+  capsuleMedia        CapsuleMedia[]
+  reactions           CapsuleReactions[]
+  capsuleViewers      CapsuleViewer[]
+  userFriend          Friend[]             @relation("FriendsOfUser")
+  friends             Friend[]             @relation("UserFriends")
+  notifications       Notifications[]
   oauthProviders      OAuthProvider[]
   passwordResetTokens PasswordResetToken[]
+  UserLogs            UserLogs[]
   userSessions        UserSession[]
-  capsuleContributors CapsuleContributor[]
-  capsuleViewers      CapsuleViewer[]
-  friends             Friend[]             @relation("UserFriends")
-  userFriend          Friend[]             @relation("FriendsOfUser")
-  comments           CapsuleComments[]
-  reactions          CapsuleReactions[]
-  notifications      Notifications[]
-  capsuleMedia       CapsuleMedia[]
+  sentRequests    FriendRequest[] @relation("SentFriendRequests")
+  receivedRequests FriendRequest[] @relation("ReceivedFriendRequests")
 }
 
-// OAuthProvider model
 model OAuthProvider {
   id             String    @id @default(uuid()) @db.Uuid
   userId         String    @db.Uuid
@@ -41,13 +45,12 @@ model OAuthProvider {
   refreshToken   String?
   expiresAt      DateTime?
 
-  // Relations
-  user User @relation(fields: [userId], references: [id])
+  //Reactions
+  user           User      @relation(fields: [userId], references: [id])
 
-  @@unique([provider, providerUserId]) // Định nghĩa unique constraint trên cặp trường provider và providerUserId
+  @@unique([provider, providerUserId])
 }
 
-// PasswordResetToken model
 model PasswordResetToken {
   id        String    @id @default(uuid()) @db.Uuid
   userId    String    @db.Uuid
@@ -55,11 +58,10 @@ model PasswordResetToken {
   createdAt DateTime  @default(now())
   expiresAt DateTime?
 
-  // Relations
-  user User @relation(fields: [userId], references: [id])
+  //Reactions
+  user      User      @relation(fields: [userId], references: [id])
 }
 
-// UserSession model
 model UserSession {
   id           String    @id @default(uuid()) @db.Uuid
   userId       String    @db.Uuid
@@ -69,131 +71,166 @@ model UserSession {
   ipAddress    String?
   userAgent    String?
 
-  // Relations
-  user User @relation(fields: [userId], references: [id])
+  //Reactions
+  user         User      @relation(fields: [userId], references: [id])
 }
 
-//Friend model
+model FriendRequest {
+  id          String     @id @default(uuid())
+  senderId    String     @db.Uuid
+  receiverId  String     @db.Uuid
+  status      RequestStatus @default(PENDING)
+  createdAt   DateTime   @default(now())
+
+  receiver    User       @relation("ReceivedFriendRequests", fields: [receiverId], references: [id])
+  sender      User       @relation("SentFriendRequests", fields: [senderId], references: [id])
+
+
+  @@unique([senderId, receiverId]) // Ensures one request per pair
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
 model Friend {
   id       String @id @default(uuid()) @db.Uuid
   userId   String @db.Uuid
   friendId String @db.Uuid
 
-  // Relations
-  user   User @relation("UserFriends", fields: [userId], references: [id])
-  friend User @relation("FriendsOfUser", fields: [friendId], references: [id])
+  //Reactions
+  friend   User   @relation("FriendsOfUser", fields: [friendId], references: [id])
+  user     User   @relation("UserFriends", fields: [userId], references: [id])
 
   @@unique([userId, friendId])
 }
 
-//CapsuleModel
-
 model Capsule {
-  id                   String   @id @default(uuid()) @db.Uuid
-  userId               String   @db.Uuid
-  privacy              String   @default("Public")
-  openingTime          DateTime // The specific time when the capsule can be opened
-  content              String // Content of the capsule (text)
-  theme                String // Background theme of the capsule
-  description          String // Description of the capsule
-  notificationInterval Int // Time interval (in minutes) for notifications
-  status               String   @default("Locked") // Status of the capsule
-  createdAt            DateTime @default(now()) // Timestamp of capsule creation
-  updatedAt            DateTime @default(now()) // Timestamp of last update
+  id                   String              @id @default(uuid()) @db.Uuid
+  userId               String              @db.Uuid
+  openingTime          DateTime
+  content              String
+  theme                String
+  description          String
+  notificationInterval Int
+  status               String              @default("Locked")
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @default(now())
+  privacy              String              @default("Public")
 
-  // Relations
-  contributors    CapsuleContributor[] // Relation to contributors
-  viewers         CapsuleViewer[] // Relation to viewers
-  recallQuestions RecallQuestion[] // Relation to recall questions
-  comments           CapsuleComments[]
-  reactions          CapsuleReactions[]
-  notifications      Notifications[]
-  capsuleMedia       CapsuleMedia[]
+  //Reactions
+  comments             CapsuleComments[]
+  contributors         CapsuleContributor[]
+  capsuleMedia         CapsuleMedia[]
+  reactions            CapsuleReactions[]
+  viewers              CapsuleViewer[]
+  notifications        Notifications[]
+  recallQuestions      RecallQuestion[]
+
+  
 }
 
 model CapsuleContributor {
-  id        String @id @default(uuid()) @db.Uuid
-  capsuleId String @db.Uuid
-  userId    String @db.Uuid
+  id        String     @id @default(uuid()) @db.Uuid
+  capsuleId String     @db.Uuid
+  userId    String     @db.Uuid
 
-  // Relationscapsule     Capsule @relation(fields: [capsuleId], references: [id])
-  capsule Capsule @relation(fields: [capsuleId], references: [id])
-  user    User    @relation(fields: [userId], references: [id])
+  //Reactions
+  capsule   Capsule @relation(fields: [capsuleId], references: [id])
+  user      User    @relation(fields: [userId], references: [id])
+
+  @@unique([capsuleId, userId])
 }
 
 model CapsuleViewer {
-  id        String @id @default(uuid()) @db.Uuid
-  capsuleId String @db.Uuid
-  userId    String @db.Uuid
+  id        String  @id @default(uuid()) @db.Uuid
+  capsuleId String  @db.Uuid
+  userId    String  @db.Uuid
 
-  // Relations
-  capsule Capsule @relation(fields: [capsuleId], references: [id])
-  user    User    @relation(fields: [userId], references: [id])
+  //Reactions
+  capsule   Capsule @relation(fields: [capsuleId], references: [id])
+  user      User    @relation(fields: [userId], references: [id])
+
+  @@unique([capsuleId, userId])
 }
 
 model CapsuleMedia {
-  mediaId     String   @id @default(uuid()) @db.Uuid
-  capsuleId   String   @db.Uuid
-  mediaUrl    String   // The URL of the media file
-  mediaType   String   // e.g., "image", "video", "voice"
-  uploadedBy  String   @db.Uuid
-  uploadedAt  DateTime @default(now())
-  metadata    Json?    // Optional field for extra data (e.g., thumbnail URL, duration)
+  mediaId    String   @id @default(uuid()) @db.Uuid
+  capsuleId  String   @db.Uuid
+  mediaUrl   String
+  mediaType  String
+  uploadedBy String   @db.Uuid
+  uploadedAt DateTime @default(now())
+  metadata   Json?
 
-  // Relationships
-  capsule     Capsule  @relation(fields: [capsuleId], references: [id])
-  user        User    @relation(fields: [uploadedBy], references: [id])
+  //Reactions
+  capsule    Capsule  @relation(fields: [capsuleId], references: [id])
+  user       User     @relation(fields: [uploadedBy], references: [id])
 }
 
 model RecallQuestion {
   id            String  @id @default(uuid()) @db.Uuid
   capsuleId     String  @db.Uuid
-  question      String  @db.Text // The recall question to be answered
-  choicesA      String  @db.Text // The answer A
-  choicesB      String  @db.Text // The answer B
-  choicesC      String  @db.Text // The answer C
-  choicesD      String  @db.Text // The answer D
-  correctAnswer String  @db.Text // The correct answer
-  explaination  String  @db.Text // The explaination
-  // Relations
+  question      String
+  choicesA      String
+  choicesB      String
+  choicesC      String
+  choicesD      String
+  correctAnswer String
+  explaination  String
+
+  //Reactions
   capsule       Capsule @relation(fields: [capsuleId], references: [id])
 }
 
-
 model CapsuleComments {
-  commentId  String   @id @default(uuid()) @db.Uuid
-  capsuleId  String   @db.Uuid
-  userId     String   @db.Uuid
-  commentText String   @db.Text
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  // Relationships
-  capsule    Capsule @relation(fields: [capsuleId], references: [id])
-  user       User    @relation(fields: [userId], references: [id])
+  commentId   String   @id @default(uuid()) @db.Uuid
+  capsuleId   String   @db.Uuid
+  userId      String   @db.Uuid
+  commentText String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  //Reactions
+  capsule     Capsule  @relation(fields: [capsuleId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
 }
 
 model CapsuleReactions {
   reactionId   String   @id @default(uuid()) @db.Uuid
   capsuleId    String   @db.Uuid
   userId       String   @db.Uuid
-  reactionType String   // e.g., "like", "love", "laugh"
+  reactionType String
   createdAt    DateTime @default(now())
-  // Unique constraint: One reaction per user per capsule
+
+  //Reactions
+  capsule      Capsule  @relation(fields: [capsuleId], references: [id])
+  user         User     @relation(fields: [userId], references: [id])
+
   @@unique([capsuleId, userId])
-  // Relationships
-  capsule      Capsule @relation(fields: [capsuleId], references: [id])
-  user         User    @relation(fields: [userId], references: [id])
 }
 
 model Notifications {
-  notificationId String   @id @default(uuid()) @db.Uuid
-  userId         String   @db.Uuid
-  capsuleId      String?  @db.Uuid
-  notificationType String   @db.Text
-  message        String
-  isRead         Boolean  @default(false)
-  createdAt      DateTime @default(now())
-  // Relationships
-  user           User    @relation(fields: [userId], references: [id])
-  capsule        Capsule? @relation(fields: [capsuleId], references: [id])
+  notificationId   String   @id @default(uuid()) @db.Uuid
+  userId           String   @db.Uuid
+  capsuleId        String?  @db.Uuid
+  notificationType String
+  message          String
+  isRead           Boolean  @default(false)
+  createdAt        DateTime @default(now())
+
+  //Reactions
+  capsule          Capsule? @relation(fields: [capsuleId], references: [id])
+  user             User     @relation(fields: [userId], references: [id])
+}
+
+model UserLogs {
+  log_id            Int      @id @default(autoincrement()) @map("log_id") // Removed extra quotes
+  user_id           String?  @map("user_id") @db.Uuid // Removed extra quotes
+  capsule_id        String?  @map("capsule_id") @db.Uuid // Removed extra quotes
+  log_action        String   @map("log_action") @db.VarChar(50) // Removed extra quotes
+  log_timestamp     DateTime @default(now()) @map("log_timestamp") @db.Timestamp(6) // Removed extra quotes
+  User              User?    @relation(fields: [user_id], references: [id], onUpdate: NoAction, map: "logs_user_id_fkey")
 }

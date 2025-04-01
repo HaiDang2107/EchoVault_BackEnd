@@ -2,9 +2,6 @@ import { IsString, IsNotEmpty, IsOptional, IsArray, IsUUID, IsDate, IsInt, Max, 
 import { Transform } from 'class-transformer';
 
 export class NewCapsuleDto {
-    @IsUUID()
-    userId!: string; // The ID of the user creating the capsule
-
     @IsString()
     @IsNotEmpty()
     content!: string; // The main content of the capsule
@@ -13,12 +10,11 @@ export class NewCapsuleDto {
     @IsNotEmpty()
     @IsArray()
     @IsUUID('4', { each: true })
-    contributors!: string[]; // Array of contributors
+    contributors?: string[]; // Array of contributors
 
-    @IsNotEmpty()
     @IsArray()
     @IsUUID('4', { each: true })
-    viewers!: string[]; // Array of contributors
+    viewers?: string[]; // Array of contributors
 
     @IsString()
     @IsNotEmpty()
@@ -27,6 +23,10 @@ export class NewCapsuleDto {
     @IsString()
     @IsNotEmpty()
     description!: string; // Description of the capsule
+
+    @IsString()
+    @IsNotEmpty()
+    privacy!: string; //Visibility of the capsule (e.g., "public", "private")
 
     @IsOptional()
     @IsArray()
@@ -38,22 +38,9 @@ export class NewCapsuleDto {
     notificationInterval!: number; // Time interval (in days) for notifications
 
     
+    @IsDate()
     @IsNotEmpty()
-    @Transform(({ value }) => {
-    if (typeof value === 'string') {
-        // Handle string input (e.g., "19:20 03:30:2025")
-        const [time, date] = value.split(' ');
-        const [hours, minutes] = time.split(':').map(Number);
-        const [month, day, year] = date.split(':').map(Number);
-        return new Date(year, month - 1, day, hours, minutes);
-    } else if (value instanceof Date) {
-        // If the value is already a Date object, return it as-is
-        return value;
-    } else {
-        throw new Error('Invalid openingTime format. Expected a string or Date object.');
-    }
-    })
-    openingTime!: Date; // The specific time when the capsule can be opened
+    openingTime!: Date;
 }
 
 export class NewRecallQuestionDto{
@@ -93,9 +80,6 @@ export class GiveCommentDto {
     @IsUUID()
     capsuleId!: string; // The ID of the capsule being commented on
   
-    @IsUUID()
-    userId!: string; // The ID of the user giving the comment
-  
     @IsString()
     @IsNotEmpty()
     commentText!: string; // The text of the comment
@@ -104,9 +88,6 @@ export class GiveCommentDto {
 export class GiveReactionDto {
     @IsUUID()
     capsuleId!: string; // The ID of the capsule being reacted to
-  
-    @IsUUID()
-    userId!: string; // The ID of the user giving the reaction
   
     @IsString()
     @IsNotEmpty()

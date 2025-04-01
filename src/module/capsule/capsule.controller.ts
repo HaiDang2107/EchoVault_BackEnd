@@ -15,41 +15,38 @@ export class CapsuleController {
   ) {}
 
   @Post('createCapsule')
-  @HttpCode(HttpStatus.CREATED)
-  async createCapsule(@Body() dto: NewCapsuleDto, @Request() req): Promise<ApiResponseDto> {
-    const userId = req.user.id;
-    return await this.capsuleService.createCapsule({ ...dto, userId });
-  }
+@HttpCode(HttpStatus.CREATED)
+async createCapsule(@Body() dto: Omit<NewCapsuleDto, 'userId'>, @Request() req): Promise<ApiResponseDto> {
+  const userId = req.user.id; // Extract userId from the authenticated user's context
+  return await this.capsuleService.createCapsule(dto, userId);
+}
 
   @Delete('deleteCapsule:id')
   @HttpCode(HttpStatus.OK)
   async deleteCapsule(@Param('id') capsuleId: string, @Request() req): Promise<ApiResponseDto> {
-    const userId = req.user.id;
-    return await this.capsuleService.deleteCapsule(capsuleId, userId);
+    return await this.capsuleService.deleteCapsule(capsuleId);
   }
 
 
   @Post('giveComment')
   @HttpCode(HttpStatus.CREATED)
   async giveComment(
-    @Body() dto: GiveCommentDto,
+    @Body() dto: Omit<GiveCommentDto, 'userId'>,
     @Request() req,
   ): Promise<ApiResponseDto> {
-    // Attach the userId from the authenticated user
-    const userId = req.user.id;
-    return await this.capsuleService.giveComment({ ...dto, userId });
+    const userId = req.user.id; // Extract userId from the authenticated user's context
+    return await this.capsuleService.giveComment(dto, userId);
   }
 
   @Post('giveReaction')
   @HttpCode(HttpStatus.CREATED)
   async giveReaction(
-    @Body() dto: GiveReactionDto,
+    @Body() dto: Omit<GiveReactionDto, 'userId'>,
     @Request() req,
   ): Promise<ApiResponseDto> {
-    // Attach the userId from the authenticated user
-    const userId = req.user.id;
-    return await this.capsuleService.giveReaction({ ...dto, userId });
-  }
+    const userId = req.user.id; // Extract userId from the authenticated user's context
+    return await this.capsuleService.giveReaction(dto, userId);
+}
 
 
   @Post(':capsuleId/open-request')
@@ -109,5 +106,52 @@ export class CapsuleController {
     @Param('capsuleId') capsuleId: string,
   ): Promise<ApiResponseDto> {
     return await this.openCapsuleService.abortOpenCapsule(capsuleId);
+  }
+
+  @Get('user/:userId/capsules')
+  async getUserCapsules(@Param('userId') userId: string): Promise<ApiResponseDto> {
+    return await this.capsuleService.getUserCapsules(userId);
+  }
+
+  // 2. Get contributors of a capsule
+  @Get(':capsuleId/contributors')
+  async getCapsuleContributors(@Param('capsuleId') capsuleId: string): Promise<ApiResponseDto> {
+    return await this.capsuleService.getCapsuleContributors(capsuleId);
+  }
+
+  // 3. Get viewers of a capsule
+  @Get(':capsuleId/viewers')
+  async getCapsuleViewers(@Param('capsuleId') capsuleId: string): Promise<ApiResponseDto> {
+    return await this.capsuleService.getCapsuleViewers(capsuleId);
+  }
+
+  // 4. Get recall questions of a capsule
+  @Get(':capsuleId/questions')
+  async getCapsuleQuestions(@Param('capsuleId') capsuleId: string): Promise<ApiResponseDto> {
+    return await this.capsuleService.getCapsuleQuestions(capsuleId);
+  }
+
+  // 5. Get all reactions of a capsule
+  @Get(':capsuleId/reactions')
+  async getCapsuleReactions(@Param('capsuleId') capsuleId: string): Promise<ApiResponseDto> {
+    return await this.capsuleService.getCapsuleReactions(capsuleId);
+  }
+
+  // 6. Get all comments of a capsule
+  @Get(':capsuleId/comments')
+  async getCapsuleComments(@Param('capsuleId') capsuleId: string): Promise<ApiResponseDto> {
+    return await this.capsuleService.getCapsuleComments(capsuleId);
+  }
+
+  // 7. Get all friends of a user
+  @Get('user/:userId/friends')
+  async getUserFriends(@Param('userId') userId: string): Promise<ApiResponseDto> {
+    return await this.capsuleService.getUserFriends(userId);
+  }
+
+  // 8. Get all notifications for a user
+  @Get('user/:userId/notifications')
+  async getNotifications(@Param('userId') userId: string): Promise<ApiResponseDto> {
+    return await this.capsuleService.getNotifications(userId);
   }
 }
