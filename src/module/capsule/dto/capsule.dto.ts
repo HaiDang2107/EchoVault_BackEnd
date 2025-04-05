@@ -1,10 +1,6 @@
-import { IsString, IsNotEmpty, IsOptional, IsArray, IsUUID, IsDate, IsInt, Max, Min } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { IsString, IsNotEmpty, IsOptional, IsArray, IsUUID, IsDate, IsInt, IsUrl, IsBoolean, Max, Min } from 'class-validator';
 
 export class NewCapsuleDto {
-    @IsUUID()
-    userId!: string; // The ID of the user creating the capsule
-
     @IsString()
     @IsNotEmpty()
     content!: string; // The main content of the capsule
@@ -13,12 +9,11 @@ export class NewCapsuleDto {
     @IsNotEmpty()
     @IsArray()
     @IsUUID('4', { each: true })
-    contributors!: string[]; // Array of contributors
+    contributors?: string[]; // Array of contributors
 
-    @IsNotEmpty()
     @IsArray()
     @IsUUID('4', { each: true })
-    viewers!: string[]; // Array of contributors
+    viewers?: string[]; // Array of contributors
 
     @IsString()
     @IsNotEmpty()
@@ -27,6 +22,10 @@ export class NewCapsuleDto {
     @IsString()
     @IsNotEmpty()
     description!: string; // Description of the capsule
+
+    @IsString()
+    @IsNotEmpty()
+    privacy!: string; //Visibility of the capsule (e.g., "public", "private")
 
     @IsOptional()
     @IsArray()
@@ -38,22 +37,9 @@ export class NewCapsuleDto {
     notificationInterval!: number; // Time interval (in days) for notifications
 
     
+    @IsDate()
     @IsNotEmpty()
-    @Transform(({ value }) => {
-    if (typeof value === 'string') {
-        // Handle string input (e.g., "19:20 03:30:2025")
-        const [time, date] = value.split(' ');
-        const [hours, minutes] = time.split(':').map(Number);
-        const [month, day, year] = date.split(':').map(Number);
-        return new Date(year, month - 1, day, hours, minutes);
-    } else if (value instanceof Date) {
-        // If the value is already a Date object, return it as-is
-        return value;
-    } else {
-        throw new Error('Invalid openingTime format. Expected a string or Date object.');
-    }
-    })
-    openingTime!: Date; // The specific time when the capsule can be opened
+    openingTime!: Date;
 }
 
 export class NewRecallQuestionDto{
@@ -93,9 +79,6 @@ export class GiveCommentDto {
     @IsUUID()
     capsuleId!: string; // The ID of the capsule being commented on
   
-    @IsUUID()
-    userId!: string; // The ID of the user giving the comment
-  
     @IsString()
     @IsNotEmpty()
     commentText!: string; // The text of the comment
@@ -104,9 +87,6 @@ export class GiveCommentDto {
 export class GiveReactionDto {
     @IsUUID()
     capsuleId!: string; // The ID of the capsule being reacted to
-  
-    @IsUUID()
-    userId!: string; // The ID of the user giving the reaction
   
     @IsString()
     @IsNotEmpty()
@@ -119,6 +99,46 @@ export class SubmitAnswerDto {
   
     @IsString()
     answer!: string; // The user's selected answer
+}
+
+export class CreateAdvertisementDto {
+    @IsString()
+    title!: string; // Title of the advertisement
+  
+    @IsUrl()
+    mediaUrl!: string; // Media URL for the advertisement
+  
+    @IsOptional()
+    @IsUrl()
+    targetUrl?: string; // Optional target URL for the advertisement
+  
+    @IsOptional()
+    @IsInt()
+    @Min(0)
+    displayOrder?: number; // Optional display order (default is 0)
+  }
+  
+export class UpdateAdvertisementDto {
+    @IsOptional()
+    @IsString()
+    title?: string; // Optional title for the advertisement
+  
+    @IsOptional()
+    @IsUrl()
+    mediaUrl?: string; // Optional media URL for the advertisement
+  
+    @IsOptional()
+    @IsUrl()
+    targetUrl?: string; // Optional target URL for the advertisement
+  
+    @IsOptional()
+    @IsInt()
+    @Min(0)
+    displayOrder?: number; // Optional display order
+  
+    @IsOptional()
+    @IsBoolean()
+    isActive?: boolean; // Optional flag to activate or deactivate the advertisement
   }
 
   
