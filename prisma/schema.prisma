@@ -21,7 +21,6 @@ model User {
 
   //Reactions
   comments            CapsuleComments[]
-  capsuleContributors CapsuleContributor[]
   capsuleMedia        CapsuleMedia[]
   reactions           CapsuleReactions[]
   capsuleViewers      CapsuleViewer[]
@@ -122,7 +121,6 @@ model Capsule {
 
   //Reactions
   comments             CapsuleComments[]
-  contributors         CapsuleContributor[]
   capsuleMedia         CapsuleMedia[]
   reactions            CapsuleReactions[]
   viewers              CapsuleViewer[]
@@ -132,17 +130,6 @@ model Capsule {
   
 }
 
-model CapsuleContributor {
-  id        String     @id @default(uuid()) @db.Uuid
-  capsuleId String     @db.Uuid
-  userId    String     @db.Uuid
-
-  //Reactions
-  capsule   Capsule @relation(fields: [capsuleId], references: [id])
-  user      User    @relation(fields: [userId], references: [id])
-
-  @@unique([capsuleId, userId])
-}
 
 model CapsuleViewer {
   id        String  @id @default(uuid()) @db.Uuid
@@ -225,6 +212,17 @@ model Notifications {
   capsule          Capsule? @relation(fields: [capsuleId], references: [id])
   user             User     @relation(fields: [userId], references: [id])
 }
+
+model Advertisement {
+  id          String   @id @default(uuid())
+  title       String   @db.VarChar(255)
+  mediaUrl    String
+  targetUrl   String?
+  displayOrder Int     @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
 
 model UserLogs {
   log_id            Int      @id @default(autoincrement()) @map("log_id") // Removed extra quotes

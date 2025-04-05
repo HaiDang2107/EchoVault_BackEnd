@@ -132,7 +132,6 @@ export class OpenCapsuleService {
       const capsule = await this.prisma.capsule.findUnique({
         where: { id: capsuleId },
         include: {
-          contributors: true,
           viewers: true,
           recallQuestions: true,
         },
@@ -158,9 +157,6 @@ export class OpenCapsuleService {
           notificationInterval: capsule.notificationInterval,
           openingTime: capsule.openingTime,
           status: capsule.status,
-          contributors: capsule.contributors.map(
-            (contributor) => contributor.userId,
-          ),
           viewers: capsule.viewers.map((viewer) => viewer.userId),
           recallQuestions: capsule.recallQuestions,
         },

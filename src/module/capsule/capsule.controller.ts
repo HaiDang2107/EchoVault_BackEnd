@@ -48,6 +48,17 @@ async createCapsule(@Body() dto: Omit<NewCapsuleDto, 'userId'>, @Request() req):
     return await this.capsuleService.giveReaction(dto, userId);
 }
 
+@Get('allDashboard')
+@HttpCode(HttpStatus.OK)
+async getAllCapsulesDashboard(
+  @Request() req,
+  @Body('page') page: number,
+  @Body('limit') limit: number,
+): Promise<ApiResponseDto> {
+  const userId = req.user.id;
+  return await this.capsuleService.getAllCapsulesDashboard(userId, page, limit);
+  }
+
 
   @Post(':capsuleId/open-request')
   @HttpCode(HttpStatus.OK)
@@ -108,17 +119,6 @@ async createCapsule(@Body() dto: Omit<NewCapsuleDto, 'userId'>, @Request() req):
     return await this.openCapsuleService.abortOpenCapsule(capsuleId);
   }
 
-  @Get('user/:userId/capsules')
-  async getUserCapsules(@Param('userId') userId: string): Promise<ApiResponseDto> {
-    return await this.capsuleService.getUserCapsules(userId);
-  }
-
-  // 2. Get contributors of a capsule
-  @Get(':capsuleId/contributors')
-  async getCapsuleContributors(@Param('capsuleId') capsuleId: string): Promise<ApiResponseDto> {
-    return await this.capsuleService.getCapsuleContributors(capsuleId);
-  }
-
   // 3. Get viewers of a capsule
   @Get(':capsuleId/viewers')
   async getCapsuleViewers(@Param('capsuleId') capsuleId: string): Promise<ApiResponseDto> {
@@ -143,15 +143,4 @@ async createCapsule(@Body() dto: Omit<NewCapsuleDto, 'userId'>, @Request() req):
     return await this.capsuleService.getCapsuleComments(capsuleId);
   }
 
-  // 7. Get all friends of a user
-  @Get('user/:userId/friends')
-  async getUserFriends(@Param('userId') userId: string): Promise<ApiResponseDto> {
-    return await this.capsuleService.getUserFriends(userId);
-  }
-
-  // 8. Get all notifications for a user
-  @Get('user/:userId/notifications')
-  async getNotifications(@Param('userId') userId: string): Promise<ApiResponseDto> {
-    return await this.capsuleService.getNotifications(userId);
-  }
 }

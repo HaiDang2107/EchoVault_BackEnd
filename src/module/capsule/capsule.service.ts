@@ -9,6 +9,8 @@ import {
   NewRecallQuestionDto,
   GiveCommentDto,
   GiveReactionDto,
+  CreateAdvertisementDto,
+  UpdateAdvertisementDto,
 } from './dto/capsule.dto';
 import {
   OpenedCapsuleInfoResponseDto,
@@ -39,28 +41,10 @@ export class CapsuleService {
           privacy: dto.privacy,
           notificationInterval: dto.notificationInterval,
           openingTime: dto.openingTime,
-          createdAt: new Date(formatInTimeZone(new Date(), timeZone, 'yyyy-MM-dd HH:mm:ss')), // Convert to UTC
+          createdAt: new Date('yyyy-MM-dd HH:mm:ss'), // Convert to UTC
           status: 'Locked', // Default status
         },
       });
-  
-      // Step 2: Add the owner as a contributor
-      await prisma.capsuleContributor.create({
-        data: {
-          capsuleId: capsule.id,
-          userId, // Owner's userId
-        },
-      });
-  
-      // Step 3: Add contributors (if any)
-      if (dto.contributors && dto.contributors.length > 0) {
-        await prisma.capsuleContributor.createMany({
-          data: dto.contributors.map((contributorId) => ({
-            capsuleId: capsule.id,
-            userId: contributorId,
-          })),
-        });
-      }
   
       // Step 4: Add the owner as a viewer (if the capsule is private)
       if (dto.privacy === 'Private') {
@@ -69,13 +53,6 @@ export class CapsuleService {
           throw new BadRequestException('Viewers must be provided for private capsules.');
         }
   
-        // Add the owner as a viewer
-        await prisma.capsuleViewer.create({
-          data: {
-            capsuleId: capsule.id,
-            userId, // Owner's userId
-          },
-        });
   
         // Add other viewers
         await prisma.capsuleViewer.createMany({
@@ -120,7 +97,7 @@ export class CapsuleService {
         mediaUrl,
         mediaType: this.getMediaType(mediaUrl), // Determine media type (e.g., image, video)
         uploadedBy: userId,
-        uploadedAt: new Date(formatInTimeZone(new Date(), timeZone, 'yyyy-MM-dd HH:mm:ss')), // Convert to UTC
+        uploadedAt: new Date('yyyy-MM-dd HH:mm:ss'), // Convert to UTC
       })),
     });
   }
@@ -185,7 +162,6 @@ export class CapsuleService {
     const capsule = await this.prisma.capsule.findUnique({
       where: { id: capsuleId },
       include: {
-        contributors: true,
         viewers: true,
         recallQuestions: true,
       },
@@ -206,9 +182,6 @@ export class CapsuleService {
         notificationInterval: capsule.notificationInterval,
         openingTime: capsule.openingTime,
         status: capsule.status,
-        contributors: capsule.contributors.map(
-          (contributor) => contributor.userId,
-        ),
         viewers: capsule.viewers.map((viewer) => viewer.userId),
       },
     } as LockedCapsuleInfoResponseDto;
@@ -280,28 +253,8 @@ export class CapsuleService {
     } as ApiResponseDto;
   }
 
-  async getUserCapsules(userId: string): Promise<ApiResponseDto> {
-    const capsules = await this.prisma.$queryRaw`
-      SELECT * FROM getUserCapsules(${userId}::uuid);
-    `;
-    return {
-      statusCode: 200,  
-      message: 'Success',
-      data: capsules,
-    } as ApiResponseDto;
-  }
+  
 
-  async getCapsuleContributors(capsuleId: string): Promise<ApiResponseDto> {
-    const contributors = await this.prisma.capsuleContributor.findMany({
-      where: { capsuleId },
-      select: { userId: true },
-    });
-    return {
-      statusCode: 200,  
-      message: 'Success',
-      data: contributors.map((contributor) => contributor.userId),
-    } as ApiResponseDto;
-  }
 
   async getCapsuleViewers(capsuleId: string): Promise<ApiResponseDto> {
     const viewers = await this.prisma.capsuleViewer.findMany({
@@ -339,7 +292,7 @@ export class CapsuleService {
 
   async getCapsuleReactions(capsuleId: string): Promise<ApiResponseDto> {
     const reactions = await this.prisma.$queryRaw`
-      SELECT * FROM getCapsuleReactions(${capsuleId}::uuid);
+      SELECT * FROM get_capsule_reactions(${capsuleId}::uuid);
     `;
     return {
       statusCode: 200,
@@ -350,7 +303,7 @@ export class CapsuleService {
 
   async getCapsuleComments(capsuleId: string): Promise<ApiResponseDto> {
     const comments = await this.prisma.$queryRaw`
-      SELECT * FROM getCapsuleComments(${capsuleId}::uuid);
+      SELECT * FROM get_capsule_comments(${capsuleId}::uuid);
     `;
     return {
       statusCode: 200,
@@ -359,25 +312,64 @@ export class CapsuleService {
     } as ApiResponseDto;
   }
 
-  async getUserFriends(userId: string): Promise<ApiResponseDto> {
-    const friends = await this.prisma.$queryRaw`
-      SELECT * FROM getUserFriends(${userId}::uuid);
-    `;
+  // Create Advertisement
+  async createAdvertisement(dto: CreateAdvertisementDto): Promise<ApiResponseDto> {
+    const advertisement = await this.prisma.advertisement.create({
+      data: {
+        title: dto.title,
+        mediaUrl: dto.mediaUrl,
+        targetUrl: dto.targetUrl,
+        displayOrder: dto.displayOrder ?? 0,
+      },
+    });
+
     return {
       statusCode: 200,
-      message: 'Success',
-      data: friends,
+      message: 'Advertisement created successfully.',
+      data: advertisement,
     } as ApiResponseDto;
   }
 
-  async getNotifications(userId: string): Promise<ApiResponseDto> {
-    const notifications = await this.prisma.$queryRaw`
-      SELECT * FROM getNotifications(${userId}::uuid);
+  // Update Advertisement
+  async updateAdvertisement(
+    id: string,
+    dto: UpdateAdvertisementDto,
+  ): Promise<ApiResponseDto> {
+    const advertisement = await this.prisma.advertisement.findUnique({
+      where: { id },
+    });
+
+    if (!advertisement) {
+      throw new NotFoundException('Advertisement not found.');
+    }
+
+    const updatedAdvertisement = await this.prisma.advertisement.update({
+      where: { id },
+      data: {
+        title: dto.title ?? advertisement.title,
+        mediaUrl: dto.mediaUrl ?? advertisement.mediaUrl,
+        targetUrl: dto.targetUrl ?? advertisement.targetUrl,
+        displayOrder: dto.displayOrder ?? advertisement.displayOrder,
+        isActive: dto.isActive ?? advertisement.isActive,
+      },
+    });
+
+    return {
+      statusCode: 200,
+      message: 'Advertisement updated successfully.',
+      data: updatedAdvertisement,
+    } as ApiResponseDto;
+  }
+
+  async getAllCapsulesDashboard (userId: string, page: number, limit: number): Promise<ApiResponseDto> {
+    const capsules = await this.prisma.$queryRaw`
+      SELECT * FROM get_capsule_dashboard(${userId}::uuid, ${page}::int, ${limit}::int);
     `;
+
     return {
       statusCode: 200,
       message: 'Success',
-      data: notifications,
+      data: capsules,
     } as ApiResponseDto;
   }
 }

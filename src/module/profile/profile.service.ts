@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ApiResponseDto } from './dto/response.dto';
 
 @Injectable()
-export class FriendsService {
+export class ProfileService {
   constructor(private prisma: PrismaService) {}
 
   // 1. Send a friend request
@@ -67,6 +67,7 @@ export class FriendsService {
   // 3. Accept a friend request
   async acceptFriendRequest(senderId: string, receiverId: string): Promise<ApiResponseDto> {
     // Check if the friend request exists and is pending
+    console.log(senderId, receiverId); // Debugging line
     const friendRequest = await this.prisma.friendRequest.findUnique({
       where: {
         senderId_receiverId: {
@@ -75,6 +76,8 @@ export class FriendsService {
         },
       },
     });
+
+    
 
     if (!friendRequest || friendRequest.status !== 'PENDING') {
       throw new BadRequestException('Friend request not found or already processed.');
@@ -97,7 +100,6 @@ export class FriendsService {
     await this.prisma.friend.createMany({
       data: [
         { userId: senderId, friendId: receiverId },
-        { userId: receiverId, friendId: senderId },
       ],
     });
 
@@ -139,6 +141,39 @@ export class FriendsService {
     return {
       statusCode: 200,
       message: 'Friend request rejected successfully.',
+    } as ApiResponseDto;
+  }
+
+  async getUserCapsules(userId: string): Promise<ApiResponseDto> {
+    const capsules = await this.prisma.$queryRaw`
+      SELECT * FROM get_user_capsules(${userId}::uuid);
+    `;
+    return {
+      statusCode: 200,  
+      message: 'Success',
+      data: capsules,
+    } as ApiResponseDto;
+  }
+
+  async getUserFriends(userId: string): Promise<ApiResponseDto> {
+    const friends = await this.prisma.$queryRaw`
+      SELECT * FROM get_user_friends(${userId}::uuid);
+    `;
+    return {
+      statusCode: 200,
+      message: 'Success',
+      data: friends,
+    } as ApiResponseDto;
+  }
+
+  async getNotifications(userId: string): Promise<ApiResponseDto> {
+    const notifications = await this.prisma.$queryRaw`
+      SELECT * FROM get_notifications(${userId}::uuid);
+    `;
+    return {
+      statusCode: 200,
+      message: 'Success',
+      data: notifications,
     } as ApiResponseDto;
   }
 }
