@@ -42,6 +42,38 @@ export class NewCapsuleDto {
     openingTime!: Date;
 }
 
+export class CapsuleDto{
+    @IsUUID()
+    capsuleId!: string; // The ID of the capsule
+
+    @IsString()
+    @IsNotEmpty()
+    content!: string; // The main content of the capsule
+
+    @IsString()
+    @IsNotEmpty()
+    theme!: string; // Background theme of the capsule
+
+    @IsNotEmpty()
+    notificationInteval!: number; // Time interval (in days) for notifications
+
+    @IsDate()
+    openingTime!: Date; // Opening time of the capsule
+
+    @IsString()
+    @IsNotEmpty()
+    description!: string; // Description of the capsule
+
+    @IsString()
+    @IsNotEmpty()
+    privacy!: string; //Visibility of the capsule (e.g., "public", "private")
+
+
+    @IsArray()
+    @IsUUID('4', { each: true })
+    viewers?: string[]; // Array of contributors
+}
+
 export class NewRecallQuestionDto{
     @IsUUID()
     capsuleId!: string; // The ID of the capsule

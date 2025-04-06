@@ -214,7 +214,7 @@ model Notifications {
 }
 
 model Advertisement {
-  id          String   @id @default(uuid())
+  id          String   @id @default(uuid()) @db.Uuid
   title       String   @db.VarChar(255)
   mediaUrl    String
   targetUrl   String?

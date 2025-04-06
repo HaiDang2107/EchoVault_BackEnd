@@ -48,15 +48,17 @@ async createCapsule(@Body() dto: Omit<NewCapsuleDto, 'userId'>, @Request() req):
     return await this.capsuleService.giveReaction(dto, userId);
 }
 
-@Get('allDashboard')
+@Post('dashboard')
 @HttpCode(HttpStatus.OK)
-async getAllCapsulesDashboard(
+async getCapsulesDashboard(
   @Request() req,
   @Body('page') page: number,
   @Body('limit') limit: number,
+  @Body('statusFilter') statusFilter?: string,
 ): Promise<ApiResponseDto> {
   const userId = req.user.id;
-  return await this.capsuleService.getAllCapsulesDashboard(userId, page, limit);
+  console.log("Input", {userId, page, limit, statusFilter});
+  return await this.capsuleService.getCapsulesDashboard(userId, page, limit, statusFilter);
   }
 
 
