@@ -1,176 +1,212 @@
 import { IsString, IsNotEmpty, IsOptional, IsArray, IsUUID, IsDate, IsInt, IsUrl, IsBoolean, Max, Min } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class NewCapsuleDto {
-    @IsString()
-    @IsNotEmpty()
-    content!: string; // The main content of the capsule
+  @ApiProperty({ description: 'The main content of the capsule' })
+  @IsString()
+  @IsNotEmpty()
+  content!: string;
 
-    
-    @IsNotEmpty()
-    @IsArray()
-    @IsUUID('4', { each: true })
-    contributors?: string[]; // Array of contributors
+  @ApiProperty({ type: [String], description: 'UUIDs of contributors' })
+  @IsNotEmpty()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  contributors?: string[];
 
-    @IsArray()
-    @IsUUID('4', { each: true })
-    viewers?: string[]; // Array of contributors
+  @ApiProperty({ type: [String], description: 'UUIDs of viewers' })
+  @IsArray()
+  @IsUUID('4', { each: true })
+  viewers?: string[];
 
-    @IsString()
-    @IsNotEmpty()
-    theme?: string; // Background theme of the capsule
+  @ApiProperty({ description: 'Background theme of the capsule' })
+  @IsString()
+  @IsNotEmpty()
+  theme?: string;
 
-    @IsString()
-    @IsNotEmpty()
-    description!: string; // Description of the capsule
+  @ApiProperty({ description: 'Description of the capsule' })
+  @IsString()
+  @IsNotEmpty()
+  description!: string;
 
-    @IsString()
-    @IsNotEmpty()
-    privacy!: string; //Visibility of the capsule (e.g., "public", "private")
+  @ApiProperty({ description: 'Visibility of the capsule', enum: ['public', 'private'] })
+  @IsString()
+  @IsNotEmpty()
+  privacy!: string;
 
-    @IsOptional()
-    @IsArray()
-    recallQuestions?: NewRecallQuestionDto[]; // Array of recall questions (max 4 questions)
+  @ApiProperty({ type: () => [NewRecallQuestionDto], required: false })
+  @IsOptional()
+  @IsArray()
+  recallQuestions?: NewRecallQuestionDto[];
 
-    @IsInt()
-    @Min(1)
-    @Max(30) // Assuming the interval is in days (1 day to 30 day)
-    notificationInterval!: number; // Time interval (in days) for notifications
+  @ApiProperty({ description: 'Notification interval in days', minimum: 1, maximum: 30 })
+  @IsInt()
+  @Min(1)
+  @Max(30)
+  notificationInterval!: number;
 
-    
-    @IsDate()
-    @IsNotEmpty()
-    openingTime!: Date;
+  @ApiProperty({ description: 'Opening time of the capsule', type: String, format: 'date-time' })
+  @IsDate()
+  @IsNotEmpty()
+  openingTime!: Date;
 }
 
-export class CapsuleDto{
-    @IsUUID()
-    capsuleId!: string; // The ID of the capsule
+export class CapsuleDto {
+  @ApiProperty({ description: 'ID of the capsule' })
+  @IsUUID()
+  capsuleId!: string;
 
-    @IsString()
-    @IsNotEmpty()
-    content!: string; // The main content of the capsule
+  @ApiProperty({ description: 'The main content of the capsule' })
+  @IsString()
+  @IsNotEmpty()
+  content!: string;
 
-    @IsString()
-    @IsNotEmpty()
-    theme!: string; // Background theme of the capsule
+  @ApiProperty({ description: 'Background theme of the capsule' })
+  @IsString()
+  @IsNotEmpty()
+  theme!: string;
 
-    @IsNotEmpty()
-    notificationInteval!: number; // Time interval (in days) for notifications
+  @ApiProperty({ description: 'Notification interval in days' })
+  @IsNotEmpty()
+  notificationInteval!: number;
 
-    @IsDate()
-    openingTime!: Date; // Opening time of the capsule
+  @ApiProperty({ description: 'Opening time of the capsule', type: String, format: 'date-time' })
+  @IsDate()
+  openingTime!: Date;
 
-    @IsString()
-    @IsNotEmpty()
-    description!: string; // Description of the capsule
+  @ApiProperty({ description: 'Description of the capsule' })
+  @IsString()
+  @IsNotEmpty()
+  description!: string;
 
-    @IsString()
-    @IsNotEmpty()
-    privacy!: string; //Visibility of the capsule (e.g., "public", "private")
+  @ApiProperty({ description: 'Visibility of the capsule' })
+  @IsString()
+  @IsNotEmpty()
+  privacy!: string;
 
-
-    @IsArray()
-    @IsUUID('4', { each: true })
-    viewers?: string[]; // Array of contributors
+  @ApiProperty({ type: [String], description: 'UUIDs of viewers' })
+  @IsArray()
+  @IsUUID('4', { each: true })
+  viewers?: string[];
 }
 
-export class NewRecallQuestionDto{
-    @IsUUID()
-    capsuleId!: string; // The ID of the capsule
+export class NewRecallQuestionDto {
+  @ApiProperty({ description: 'ID of the capsule' })
+  @IsUUID()
+  capsuleId!: string;
 
-    @IsNotEmpty()
-    @IsString()
-    question!: string; // The recall question
+  @ApiProperty({ description: 'The recall question' })
+  @IsNotEmpty()
+  @IsString()
+  question!: string;
 
-    @IsNotEmpty()
-    @IsString()
-    choicesA!: string; // The recall answer
+  @ApiProperty({ description: 'Answer choice A' })
+  @IsNotEmpty()
+  @IsString()
+  choicesA!: string;
 
-    @IsNotEmpty()
-    @IsString()
-    choicesB!: string; // The recall answer
+  @ApiProperty({ description: 'Answer choice B' })
+  @IsNotEmpty()
+  @IsString()
+  choicesB!: string;
 
-    @IsNotEmpty()
-    @IsString()
-    choicesC!: string; // The recall answer
+  @ApiProperty({ description: 'Answer choice C' })
+  @IsNotEmpty()
+  @IsString()
+  choicesC!: string;
 
-    @IsNotEmpty()
-    @IsString()
-    choicesD!: string; // The recall answer
+  @ApiProperty({ description: 'Answer choice D' })
+  @IsNotEmpty()
+  @IsString()
+  choicesD!: string;
 
-    @IsNotEmpty()
-    @IsString()
-    correctAnswer!: string; // The correct answer
+  @ApiProperty({ description: 'Correct answer' })
+  @IsNotEmpty()
+  @IsString()
+  correctAnswer!: string;
 
-    @IsString()
-    @IsOptional()
-    explaination?: string; // Explanation of the recall question
+  @ApiProperty({ description: 'Explanation of the recall question', required: false })
+  @IsString()
+  @IsOptional()
+  explaination?: string;
 }
 
 export class GiveCommentDto {
-    @IsUUID()
-    capsuleId!: string; // The ID of the capsule being commented on
-  
-    @IsString()
-    @IsNotEmpty()
-    commentText!: string; // The text of the comment
+  @ApiProperty({ description: 'Capsule ID being commented on' })
+  @IsUUID()
+  capsuleId!: string;
+
+  @ApiProperty({ description: 'Text of the comment' })
+  @IsString()
+  @IsNotEmpty()
+  commentText!: string;
 }
 
 export class GiveReactionDto {
-    @IsUUID()
-    capsuleId!: string; // The ID of the capsule being reacted to
-  
-    @IsString()
-    @IsNotEmpty()
-    reactionType!: string; // The type of reaction (e.g., "like", "love", "laugh")
+  @ApiProperty({ description: 'Capsule ID being reacted to' })
+  @IsUUID()
+  capsuleId!: string;
+
+  @ApiProperty({ description: 'Type of reaction (like, love, laugh)' })
+  @IsString()
+  @IsNotEmpty()
+  reactionType!: string;
 }
 
 export class SubmitAnswerDto {
-    @IsUUID()
-    questionId!: string; // The ID of the question being answered
-  
-    @IsString()
-    answer!: string; // The user's selected answer
+  @ApiProperty({ description: 'Question ID being answered' })
+  @IsUUID()
+  questionId!: string;
+
+  @ApiProperty({ description: 'User selected answer' })
+  @IsString()
+  answer!: string;
 }
 
 export class CreateAdvertisementDto {
-    @IsString()
-    title!: string; // Title of the advertisement
-  
-    @IsUrl()
-    mediaUrl!: string; // Media URL for the advertisement
-  
-    @IsOptional()
-    @IsUrl()
-    targetUrl?: string; // Optional target URL for the advertisement
-  
-    @IsOptional()
-    @IsInt()
-    @Min(0)
-    displayOrder?: number; // Optional display order (default is 0)
-  }
-  
-export class UpdateAdvertisementDto {
-    @IsOptional()
-    @IsString()
-    title?: string; // Optional title for the advertisement
-  
-    @IsOptional()
-    @IsUrl()
-    mediaUrl?: string; // Optional media URL for the advertisement
-  
-    @IsOptional()
-    @IsUrl()
-    targetUrl?: string; // Optional target URL for the advertisement
-  
-    @IsOptional()
-    @IsInt()
-    @Min(0)
-    displayOrder?: number; // Optional display order
-  
-    @IsOptional()
-    @IsBoolean()
-    isActive?: boolean; // Optional flag to activate or deactivate the advertisement
-  }
+  @ApiProperty({ description: 'Title of the advertisement' })
+  @IsString()
+  title!: string;
 
-  
+  @ApiProperty({ description: 'Media URL for the advertisement' })
+  @IsUrl()
+  mediaUrl!: string;
+
+  @ApiProperty({ description: 'Target URL for the advertisement', required: false })
+  @IsOptional()
+  @IsUrl()
+  targetUrl?: string;
+
+  @ApiProperty({ description: 'Display order of the ad (default 0)', required: false })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  displayOrder?: number;
+}
+
+export class UpdateAdvertisementDto {
+  @ApiProperty({ description: 'Updated title', required: false })
+  @IsOptional()
+  @IsString()
+  title?: string;
+
+  @ApiProperty({ description: 'Updated media URL', required: false })
+  @IsOptional()
+  @IsUrl()
+  mediaUrl?: string;
+
+  @ApiProperty({ description: 'Updated target URL', required: false })
+  @IsOptional()
+  @IsUrl()
+  targetUrl?: string;
+
+  @ApiProperty({ description: 'Updated display order', required: false })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  displayOrder?: number;
+
+  @ApiProperty({ description: 'Flag to activate or deactivate', required: false })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}

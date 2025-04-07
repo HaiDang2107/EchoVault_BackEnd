@@ -1,15 +1,28 @@
-import { CreateAdvertisementDto, UpdateAdvertisementDto } from './dto/admin.dto';
-import { Controller, Post, Put, Body, Param, HttpCode, HttpStatus, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Put,
+  Body,
+  Param,
+  HttpCode,
+  HttpStatus,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
+import { CreateAdvertisementDto, UpdateAdvertisementDto } from './dto/admin.dto';
 import { ApiResponseDto } from './dto/response.dto';
 import { AdminService } from './admin.service';
 
-@Controller('advertisements')
+@Controller('admin/advertisements')
+@UseGuards(JwtAuthGuard)
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
-  // Create Advertisement
-  @Post('create')
+  /**
+   * @route POST /admin/advertisements
+   * @desc Create a new advertisement
+   */
+  @Post()
   @HttpCode(HttpStatus.CREATED)
   async createAdvertisement(
     @Body() dto: CreateAdvertisementDto,
@@ -17,8 +30,11 @@ export class AdminController {
     return await this.adminService.createAdvertisement(dto);
   }
 
-  // Update Advertisement
-  @Put('update/:id')
+  /**
+   * @route PUT /admin/advertisements/:id
+   * @desc Update an existing advertisement
+   */
+  @Put(':id')
   @HttpCode(HttpStatus.OK)
   async updateAdvertisement(
     @Param('id') id: string,
