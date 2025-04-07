@@ -1,15 +1,26 @@
-import { Controller, Post, Get, Body, Param, Request, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { ProfileService } from './profile.service';
 import { ApiResponseDto } from './dto/response.dto';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
 
-@Controller('profile')
+@ApiTags('Profile') // Group in Swagger UI
+@ApiBearerAuth() // Enables "Authorize" button in Swagger
 @UseGuards(JwtAuthGuard)
+@Controller('profile')
 export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
 
-  // 1. Send a friend request
   @Post('request')
+  @ApiOperation({ summary: 'Send a friend request' })
+  @ApiBody({ schema: { example: { receiverId: 'uuid-of-receiver' } } })
   async sendFriendRequest(
     @Request() req,
     @Body('receiverId') receiverId: string,
@@ -18,15 +29,16 @@ export class ProfileController {
     return await this.profileService.sendFriendRequest(senderId, receiverId);
   }
 
-  // 2. Retrieve pending friend requests for a user
   @Get('requests')
+  @ApiOperation({ summary: 'Get pending friend requests' })
   async getPendingFriendRequests(@Request() req): Promise<ApiResponseDto> {
     const userId = req.user.id;
     return await this.profileService.getPendingFriendRequests(userId);
   }
 
-  // 3. Accept a friend request
   @Post('accept')
+  @ApiOperation({ summary: 'Accept a friend request' })
+  @ApiBody({ schema: { example: { senderId: 'uuid-of-sender' } } })
   async acceptFriendRequest(
     @Request() req,
     @Body('senderId') senderId: string,
@@ -35,8 +47,9 @@ export class ProfileController {
     return await this.profileService.acceptFriendRequest(senderId, receiverId);
   }
 
-  // 4. Reject a friend request
   @Post('reject')
+  @ApiOperation({ summary: 'Reject a friend request' })
+  @ApiBody({ schema: { example: { senderId: 'uuid-of-sender' } } })
   async rejectFriendRequest(
     @Request() req,
     @Body('senderId') senderId: string,
@@ -46,22 +59,23 @@ export class ProfileController {
   }
 
   @Get('capsules')
+  @ApiOperation({ summary: 'Get user time capsules' })
   async getUserCapsules(@Request() req): Promise<ApiResponseDto> {
-    const userId = req.user.id; // Extract userId from the authenticated user's context
+    const userId = req.user.id;
     return await this.profileService.getUserCapsules(userId);
   }
 
-  // 7. Get all friends of a user
   @Get('friends')
+  @ApiOperation({ summary: 'Get user friends' })
   async getUserFriends(@Request() req): Promise<ApiResponseDto> {
-    const userId = req.user.id; // Extract userId from the authenticated user's context
+    const userId = req.user.id;
     return await this.profileService.getUserFriends(userId);
   }
 
-  // 8. Get all notifications for a user
   @Get('notifications')
+  @ApiOperation({ summary: 'Get user notifications' })
   async getNotifications(@Request() req): Promise<ApiResponseDto> {
-    const userId = req.user.id; // Extract userId from the authenticated user's context
+    const userId = req.user.id;
     return await this.profileService.getNotifications(userId);
   }
 }
