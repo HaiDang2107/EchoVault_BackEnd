@@ -1,6 +1,6 @@
 // capsule-media.service.ts
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from './prisma.service';
+import { PrismaService } from 'src/module/prisma/prisma.service';
 
 @Injectable()
 export class CapsuleMediaService {
