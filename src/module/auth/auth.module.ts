@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import { PassportModule } from '@nestjs/passport'; // Passport để xác thực
 import { JwtModule } from '@nestjs/jwt'; // Để tạo JWT token
 import { UserModule } from '../user/user.module'; // Module người dùng (module User để lưu trữ thông tin người dùng)
+import { MailModule } from '../mail/mail.module';
 import { ConfigService } from '@nestjs/config';
 import { LocalStrategy } from './strategy/local.strategy';
 import { JwtStrategy } from './strategy/jwt.strategy';
@@ -14,6 +15,7 @@ import { RolesGuard } from './guard/role.guard';
 @Module({
   imports: [
     UserModule,
+    MailModule,
     PassportModule,
     JwtModule.registerAsync({
       inject: [ConfigService],

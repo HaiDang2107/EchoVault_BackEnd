@@ -22,11 +22,14 @@ export class UserService {
     });
   }
 
-  async findUserByProviderUserId(
-    tx: any,
-    provider: string,
-    providerUserId: string,
-  ) {
+  async updateUserByUserId(userId: string, passwordHash: string) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash: passwordHash },
+    });
+  }
+
+  async findUserByProviderUserId(provider: string, providerUserId: string) {
     return this.prisma.oAuthProvider.findUnique({
       where: {
         provider_providerUserId: {
@@ -94,7 +97,6 @@ export class UserService {
     const googleID = profile.id;
     const user = await this.prisma.$transaction(async (tx) => {
       const existingOAuth = await this.findUserByProviderUserId(
-        tx,
         provider,
         googleID,
       );
@@ -119,5 +121,30 @@ export class UserService {
       }
     });
     return user;
+  }
+
+  async createPasswordResetToken(
+    token: string,
+    userId: string,
+    expiresAt: Date,
+  ) {
+    return this.prisma.passwordResetToken.create({
+      data: {
+        token: token,
+        userId: userId,
+        expiresAt: expiresAt,
+      },
+    });
+  }
+
+  async findUserByPasswordResetToken(token: string) {
+    return this.prisma.passwordResetToken.findUnique({
+      where: { token: token },
+      include: { user: true },
+    });
+  }
+
+  async deletePasswordResetToken(token: string) {
+    await this.prisma.passwordResetToken.delete({ where: { token: token } });
   }
 }

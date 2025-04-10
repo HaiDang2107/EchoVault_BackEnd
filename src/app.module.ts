@@ -12,6 +12,7 @@ import { ProfileModule } from './module/profile/profile.module';
 import { AdminModule } from './module/admin/admin.module';
 
 import { CapsuleMediaModule } from './capsule-media/capsule-media.module';
+import { emailConfig } from './config/email.config';
 @Module({
   imports: [
     AuthModule, 
@@ -23,7 +24,7 @@ import { CapsuleMediaModule } from './capsule-media/capsule-media.module';
     CapsuleMediaModule,
     ConfigModule.forRoot({
       isGlobal: true, // Cho phép truy cập biến môi trường ở mọi nơi
-      load: [jwtConfig, googleConfig, redisConfig], // Load config từ jwt.config.ts
+      load: [jwtConfig, googleConfig, redisConfig, emailConfig], // Load config từ jwt.config.ts
     }),
   ],
 })
