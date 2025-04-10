@@ -61,4 +61,19 @@ export class AuthController {
     
     return res.status(200).json({ message: 'Log out successfully' });
   }
+
+  @Post('forgot-password')
+  async forgotPassword(@Body('email') email: string) {
+    await this.authService.requestPasswordReset(email);
+    return { message: 'If that email exists, a reset link has been sent.' };
+  }
+
+  @Post('reset-password')
+  async resetPassword(
+    @Body('token') token: string,
+    @Body('newPassword') newPassword: string,
+  ) {
+    await this.authService.resetPassword(token, newPassword);
+    return { message: 'Password reset successful.' };
+  }
 }
