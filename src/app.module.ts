@@ -11,7 +11,7 @@ import { googleConfig } from './config/google.config';
 import { ProfileModule } from './module/profile/profile.module';
 import { AdminModule } from './module/admin/admin.module';
 
-import { CapsuleMediaModule } from './capsule-media/capsule-media.module';
+import { CapsuleMediaModule } from './module/capsule/capsule-media.module';
 import { emailConfig } from './config/email.config';
 @Module({
   imports: [

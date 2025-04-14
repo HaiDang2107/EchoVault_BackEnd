@@ -11,9 +11,11 @@ async function bootstrap() {
     }),
   );
 
+  app.enableCors();
+
   // Swagger Configuration
   const config = new DocumentBuilder()
-    .setTitle('Your Project API')
+    .setTitle('EchoVault API')
     .setDescription('Automatically generated API documentation')
     .setVersion('1.0')
     .addServer('/') // Ensures correct base path on platforms like Render

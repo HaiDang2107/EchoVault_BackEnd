@@ -11,6 +11,8 @@ import { JwtStrategy } from './strategy/jwt.strategy';
 import { GoogleStrategy } from './strategy/google.strategy';
 import { JwtAuthGuard } from './guard/jwt-auth.guard';
 import { RolesGuard } from './guard/role.guard';
+import { GoogleAuthGuard } from './guard/google-auth.guard';
+import { LocalAuthGuard } from './guard/local-auth.guard';
 
 @Module({
   imports: [
@@ -26,7 +28,7 @@ import { RolesGuard } from './guard/role.guard';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy, GoogleStrategy],
+  providers: [AuthService, LocalStrategy, JwtStrategy, GoogleStrategy, JwtAuthGuard, RolesGuard, GoogleAuthGuard, LocalAuthGuard],
   // Nếu 1 Guard được áp dụng cho tất cả các controller thì cần thêm Guard đó vào mảng providers
 
   exports: [JwtAuthGuard, RolesGuard],
