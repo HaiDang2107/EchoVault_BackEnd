@@ -165,4 +165,38 @@ export class UserService {
   async deletePasswordResetToken(token: string) {
     await this.prisma.passwordResetToken.delete({ where: { token: token } });
   }
+
+  async createSession(userId: string, sessionToken: string, ipAddress?: string, userAgent?: string) {
+
+    const session = await this.prisma.userSession.create({
+      data: {
+        userId,
+        sessionToken,
+        ipAddress,
+        userAgent,
+        expiresAt: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
+      },
+    });
+
+    return session;
+  }
+
+  async deleteSession(sessionToken: string): Promise<void> {
+    try {
+      await this.prisma.userSession.delete({
+        where: { sessionToken },
+      });
+    } catch (error) {
+      console.error('Error deleting session:', error);
+      throw new Error('Session not found or already deleted');
+    }
+  }
+
+  async getSessionsByUserId(userId: string) {
+    return this.prisma.userSession.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' }, 
+    });
+  }
+  
 }

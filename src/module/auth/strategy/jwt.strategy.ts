@@ -23,15 +23,23 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   // Hàm validate kiểm tra người dùng có hợp lệ hay không, tự động được gọi
   async validate(payload: JwtPayload) {
     // Kiểm tra người dùng từ cơ sở dữ liệu hoặc service
-    const { username } = payload;
+    const { username, sessionToken, sub, role } = payload;
 
-    const user = await this.userService.findUserByEmail(username);
+    const user = await this.userService.getUserById(sub);
     if (!user) {
-      return new UnauthorizedException('Invalid token or user not found');
+      return new Error('User not found');
     }
 
-    // check expiration
-    //...
+    const session = await this.userService.getSessionsByUserId(user.id);
+
+    if (!session) {
+      throw new Error('Session not found');
+    }
+
+    if (user.email !== username || user.role !== role || session[0].sessionToken !== sessionToken || session[0].expiresAt!.getTime() < Date.now()) {
+      throw new UnauthorizedException('Session expired or something else');
+    }
+
     return user;
   }
 }
