@@ -36,12 +36,17 @@ export class AuthService {
   }
 
   // Phương thức cấp JWT token cho người dùng sau khi login
-  async login(user: User) {
+  async login(user: User, ipAddress: string, userAgent: string) {
+    const sessionToken = randomBytes(32).toString('hex');
+
     const payload: JwtPayload = {
       username: user.email,
+      sessionToken: sessionToken,
       sub: user.id,
       role: user.role,
     }; // Tạo payload cho JWT token
+
+    await this.userService.createSession(user.id, sessionToken, ipAddress, userAgent);
 
     // Tạo token và trả về cho người dùng
     return {
@@ -51,6 +56,9 @@ export class AuthService {
     };
   }
 
+  async logout(sessionToken: string) {
+    this.userService.deleteSession(sessionToken);
+  }
   // Method gửi link tới email của user
   async requestPasswordReset(email: string) {
     const user = await this.userService.findUserByEmail(email);
