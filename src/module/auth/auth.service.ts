@@ -29,7 +29,7 @@ export class AuthService {
     const hash = await argon2.hash(dto.password);
 
     //save new user
-    const user = await this.userService.createUser(dto.email, hash);
+    const user = await this.userService.createUser(dto.email, hash, dto.displayName);
 
     //Return saved user
     return user;

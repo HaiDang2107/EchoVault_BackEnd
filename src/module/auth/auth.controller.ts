@@ -38,7 +38,7 @@ export class AuthController {
 
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@Request() req, @Res() res: Response) {
+  async login(@Request() req, @Res({ passthrough: true }) res: Response) {
     const token = await this.authService.login(req.user);
 
     // Lưu JWT vào cookie
@@ -47,8 +47,7 @@ export class AuthController {
       sameSite: 'strict', // Ngăn gửi cookie trong yêu cầu cross-site
       maxAge: 3600000,  // Thời gian sống của cookie (1 giờ)
     });
-
-    return res.status(200).json({ message: 'Log in successfully' });;
+    return { message: 'Log in successfully', token: token.access_token };
   }
 
   @Post('logout')

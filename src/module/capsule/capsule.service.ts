@@ -371,7 +371,7 @@ export class CapsuleService {
       ${statusFilter ?? null}::text
     );
     `;
-
+    //Need the skp atribute as we load data eventually
     console.log("capsule",capsules);
 
     // Fetch active advertisements
