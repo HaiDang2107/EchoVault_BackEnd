@@ -10,21 +10,5 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 export class UserController {
   constructor(private userService: UserService) {}
 
-  @ApiOperation({ summary: 'Get user info' })
-  @Get('profile')
-  async getProfile(@Request() req): Promise<ApiResponseDto> {
-    const userId = req.user.id; // Assuming JWT payload has 'id' as user ID
-    if (!userId) {
-      return {
-        statusCode: 401,
-        message: 'Unauthorized',
-      };
-    }
-    const user = await this.userService.getUserById(userId);
-    return {
-      statusCode: 200,
-      message: 'Get user success',
-      data: user,
-    };
-  }
+  
 }

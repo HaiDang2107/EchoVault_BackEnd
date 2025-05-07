@@ -78,4 +78,59 @@ export class ProfileController {
     const userId = req.user.id;
     return await this.profileService.getNotifications(userId);
   }
+
+  @ApiOperation({ summary: 'Get user info' })
+  @Get('profile')
+  async getProfile(@Request() req): Promise<ApiResponseDto> {
+    const userId = req.user.id; // Assuming JWT payload has 'id' as user ID
+    if (!userId) {
+      return {
+        statusCode: 401,
+        message: 'Unauthorized',
+      };
+    }
+    const user = await this.profileService.getUserProfile(userId);
+    return {
+      statusCode: 200,
+      message: 'Get user success',
+      data: user,
+    };
+  }
+
+  @ApiOperation({ summary: 'Update user info' })
+  @Post('update')
+  @ApiBody({
+    schema: {
+      example: {
+        displayName: 'New Display Name',
+        email: 'example email',
+        avatar: 'https://example.com/avatar.jpg',
+      },
+    },
+  })
+  async updateProfile(
+    @Request() req,
+    @Body() updateProfileDto: {
+      displayName: string;
+      email: string;
+      avatar: string;
+    },
+  ): Promise<ApiResponseDto> {
+    const userId = req.user.id; // Assuming JWT payload has 'id' as user ID
+    if (!userId) {
+      return {
+        statusCode: 401,
+        message: 'Unauthorized',
+      };
+    }
+    const updatedUser = await this.profileService.updateUserProfile(
+      userId,
+      updateProfileDto,
+    );
+    return {
+      statusCode: 200,
+      message: 'Update user success',
+      data: updatedUser,
+    };
+  }
 }

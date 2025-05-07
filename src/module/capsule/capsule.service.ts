@@ -22,6 +22,8 @@ import {
   CapsuleNotFoundException,
   CapsuleNotOpenedException,
 } from './exceptions/capsule.exception';
+
+import { getYourViewCapsuleQuery } from 'src/utils/capsuleQuery.util';
 import {formatInTimeZone} from 'date-fns-tz';
 
 const timeZone = 'Asia/Bangkok'; // GMT+7
@@ -362,48 +364,4 @@ export class CapsuleService {
     } as ApiResponseDto;
   }
 
-  async getCapsulesDashboard (userId: string, page: number, limit: number, statusFilter?: string): Promise<ApiResponseDto> {
-    const capsules = await this.prisma.$queryRaw<any[]>`
-      SELECT * FROM get_capsule_dashboard(
-      ${userId}::uuid,
-      ${page}::int,
-      ${limit}::int,
-      ${statusFilter ?? null}::text
-    );
-    `;
-    //Need the skp atribute as we load data eventually
-    console.log("capsule",capsules);
-
-    // Fetch active advertisements
-    const advertisements = await this.prisma.$queryRaw<any[]>`
-    SELECT * FROM get_active_advertisements();
-  `;
-
-  // Inject ads after every X capsules
-  const INSERT_AFTER = 2;
-  const result: any[] = [];
-  let adIndex = 0;
-
-  
-
-  if(capsules != null){
-    capsules.forEach((capsule, index) => {
-      result.push({ type: 'capsule', data: capsule });
-  
-      // After every X capsules, insert one ad
-      if ((index + 1) % INSERT_AFTER === 0 && advertisements.length > 0) {
-        const ad = advertisements[adIndex % advertisements.length]; // loop ads
-        result.push({ type: 'ad', data: ad });
-        adIndex++;
-      }
-    });
-  }
-  
-
-    return {
-      statusCode: 200,
-      message: 'Success',
-      data: result,
-    } as ApiResponseDto;
-  }
 }

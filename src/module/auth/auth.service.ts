@@ -7,6 +7,7 @@ import { UserService } from '../user/user.service';
 import { JwtPayload } from './interface/jwt-payload.interface';
 import { User } from '@prisma/client';
 import { randomBytes } from 'crypto';
+import { PasswordUtil } from 'src/utils/passwordRegex.util';
 import * as argon2 from 'argon2';
 
 @Injectable()
@@ -23,6 +24,12 @@ export class AuthService {
     const existingUser = await this.userService.findUserByEmail(dto.email);
     if (existingUser) {
       throw new Error('Username already exists'); // Lỗi nếu tên người dùng đã tồn tại
+    }
+
+    // Validate password strength
+    const passwordStrength = PasswordUtil.checkPasswordStrength(dto.password);
+    if (passwordStrength === 'Weak' || passwordStrength === 'Invalid') {
+      throw new BadRequestException('Password is too weak or invalid');
     }
 
     //Generate password hash using argon 2
