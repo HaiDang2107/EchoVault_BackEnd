@@ -176,4 +176,48 @@ export class ProfileService {
       data: notifications,
     } as ApiResponseDto;
   }
+
+  async getUserProfile(userId: string): Promise<ApiResponseDto> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        displayName: true,
+        avatar: true,
+        friends: {
+          select: {
+            friendId: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found.');
+    }
+
+    return {
+      statusCode: 200,
+      message: 'User profile retrieved successfully.',
+      data: user,
+    } as ApiResponseDto;
+  }
+  
+  async updateUserProfile(userId: string, data: any): Promise<ApiResponseDto> {
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        displayName: data.displayName,
+        avatar: data.avatar,
+        timezone: data.timezone,
+      },
+    });
+
+    return {
+      statusCode: 200,
+      message: 'User profile updated successfully.',
+      data: updatedUser,
+    } as ApiResponseDto;
+  }
 }

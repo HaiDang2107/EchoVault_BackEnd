@@ -30,6 +30,7 @@ import {
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
 import { OpenCapsuleService } from './open-capsule.service';
 import { SubmitAnswerDto } from './dto';
+import { GetCapsuleService } from './get-capsule.service';
 
 
 
@@ -40,6 +41,7 @@ export class CapsuleController {
   constructor(
     private readonly capsuleService: CapsuleService,
     private readonly openCapsuleService: OpenCapsuleService,
+    private readonly getCapsuleService: GetCapsuleService,
   ) {}
 
   @Post('createCapsule')
@@ -86,23 +88,6 @@ export class CapsuleController {
     return await this.capsuleService.giveReaction(dto, userId);
   }
 
-  @Post('dashboard')
-  @ApiOperation({ summary: 'Get user dashboard capsules with pagination and filter' })
-  @ApiResponse({ status: 200, description: 'Dashboard data fetched' })
-  async getCapsulesDashboard(
-    @Request() req,
-    @Body('page') page: number,
-    @Body('limit') limit: number,
-    @Body('statusFilter') statusFilter?: string,
-  ): Promise<ApiResponseDto> {
-    const userId = req.user.id;
-    return await this.capsuleService.getCapsulesDashboard(
-      userId,
-      page,
-      limit,
-      statusFilter,
-    );
-  }
 
   @Post(':capsuleId/open-request')
   @ApiOperation({ summary: 'Request to open a capsule' })
@@ -187,5 +172,16 @@ export class CapsuleController {
   @ApiParam({ name: 'capsuleId', required: true })
   async getCapsuleComments(@Param('capsuleId') capsuleId: string): Promise<ApiResponseDto> {
     return await this.capsuleService.getCapsuleComments(capsuleId);
+  }
+
+  @Get(':capsuleId)')
+  @ApiOperation({ summary: 'Get capsule info' })
+  @ApiParam({ name: 'capsuleId', required: true })
+  async getCapsuleInfo(
+    @Param('capsuleId') capsuleId: string,
+    @Request() req,
+  ): Promise<ApiResponseDto> {
+    const userId = req.user.id;
+    return await this.getCapsuleService.getCapsuleInfo(capsuleId, userId);
   }
 }
