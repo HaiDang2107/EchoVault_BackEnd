@@ -174,7 +174,7 @@ export class CapsuleController {
     return await this.capsuleService.getCapsuleComments(capsuleId);
   }
 
-  @Get(':capsuleId)')
+  @Get(':capsuleId')
   @ApiOperation({ summary: 'Get capsule info' })
   @ApiParam({ name: 'capsuleId', required: true })
   async getCapsuleInfo(
@@ -183,5 +183,21 @@ export class CapsuleController {
   ): Promise<ApiResponseDto> {
     const userId = req.user.id;
     return await this.getCapsuleService.getCapsuleInfo(capsuleId, userId);
+  }
+
+  @Get('canViewCapsule')
+  @ApiOperation({ summary: 'Get capsules that user can view' })
+  @ApiResponse({ status: 200, description: 'List of capsules user can view', type: ApiResponseDto })
+  async getCanViewCapsule(@Request() req): Promise<ApiResponseDto> {
+    const userId = req.user.id;
+    return await this.getCapsuleService.getCanViewCapsule(userId, 1, 100);
+  }
+
+  @Get('canBeOpenedCapsule')
+  @ApiOperation({ summary: 'Get capsules that can be opened now' })
+  @ApiResponse({ status: 200, description: 'List of capsules that can be opened now', type: ApiResponseDto })
+  async getCanBeOpenedCapsule(@Request() req): Promise<ApiResponseDto> {
+    const userId = req.user.id;
+    return await this.getCapsuleService.getCanBeOpenedCapsule(userId);
   }
 }

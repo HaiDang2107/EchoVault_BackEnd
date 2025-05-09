@@ -11,17 +11,17 @@ import { googleConfig } from './config/google.config';
 import { ProfileModule } from './module/profile/profile.module';
 import { AdminModule } from './module/admin/admin.module';
 
-import { CapsuleMediaModule } from './module/capsule/capsule-media.module';
 import { emailConfig } from './config/email.config';
+import { DashboardModule } from './module/dashboard/dashboard.module';
 @Module({
   imports: [
     AuthModule, 
     UserModule, 
     PrismaModule,
     CapsuleModule,
+    DashboardModule,
     ProfileModule,
     AdminModule,
-    CapsuleMediaModule,
     ConfigModule.forRoot({
       isGlobal: true, // Cho phép truy cập biến môi trường ở mọi nơi
       load: [jwtConfig, googleConfig, redisConfig, emailConfig], // Load config từ jwt.config.ts

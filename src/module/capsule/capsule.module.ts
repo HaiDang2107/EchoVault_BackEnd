@@ -5,11 +5,12 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { OpenCapsuleService } from "./open-capsule.service";
 import { CapsuleMediaService } from "./capsule-media.service";
 import { CapsuleMediaController } from "./capsule-media.controller";
+import { GetCapsuleService } from "./get-capsule.service";
 
 
 @Module({
     imports: [PrismaModule],
     controllers: [CapsuleController, CapsuleMediaController],
-    providers: [CapsuleService, OpenCapsuleService, CapsuleMediaService],
+    providers: [CapsuleService, OpenCapsuleService, CapsuleMediaService, GetCapsuleService],
 })
-export class CapsuleModule {}
+export class CapsuleModule {} 

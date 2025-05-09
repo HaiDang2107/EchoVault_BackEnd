@@ -22,6 +22,7 @@ describe('AuthController (e2e)', () => {
   });
 
   const user: AuthDto = {
+    displayName: 'Test User',
     email: 'testthỉd@example.com',
     password: 'Te3456',
   };

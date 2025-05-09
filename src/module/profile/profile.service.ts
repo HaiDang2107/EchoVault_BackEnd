@@ -1,10 +1,14 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApiResponseDto } from './dto/response.dto';
-
+import { NotificationService } from '../notification/notification.service';
+import { NotificationType } from '../notification/dto/capsuleNoti.dto';
 @Injectable()
 export class ProfileService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationService: NotificationService,
+  ) {}
 
   // 1. Send a friend request
   async sendFriendRequest(senderId: string, receiverId: string): Promise<ApiResponseDto> {
@@ -22,7 +26,7 @@ export class ProfileService {
       throw new BadRequestException('Friend request already exists.');
     }
 
-    // Create a new friend request
+    
     const friendRequest = await this.prisma.friendRequest.create({
       data: {
         senderId,
@@ -30,6 +34,21 @@ export class ProfileService {
         status: 'PENDING',
       },
     });
+
+    // Send a notification to the receiver
+    // Create a new friend request
+    const sender = await this.prisma.user.findUnique({
+      where: { id: senderId },
+      select: {
+        displayName: true,
+      }
+    });
+    await this.notificationService.createImmediateNotification(
+      receiverId,
+      NotificationType.FriendRequest,
+      `You have received a friend request from ${sender?.displayName}.`
+    );
+
 
     return {
       statusCode: 201,
@@ -102,6 +121,19 @@ export class ProfileService {
         { userId: senderId, friendId: receiverId },
       ],
     });
+
+    // Send a notification to the sender
+    const receiver = await this.prisma.user.findUnique({
+      where: { id: receiverId },
+      select: {
+        displayName: true,
+      }
+    });
+    await this.notificationService.createImmediateNotification(
+      senderId,
+      NotificationType.FriendRequest,
+      `Your friend request to ${receiver?.displayName} has been accepted.`
+    );
 
     return {
       statusCode: 200,

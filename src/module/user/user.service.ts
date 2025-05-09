@@ -8,11 +8,9 @@ export class UserService {
   // Tìm người dùng theo username
   async findUserByEmail(email: string) {
     return this.prisma.user.findUnique({
-      // find in User table
-      where: { email }, // attribute email
+      where: { email },
     });
   }
-
 
   async createUser(email: string, password: string, displayName: string) {
     return this.prisma.user.create({
@@ -22,6 +20,13 @@ export class UserService {
         displayName: displayName,
       },
     });
+  }
+
+  async getUserById(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+    return user;
   }
 
   async updateUserByUserId(userId: string, passwordHash: string) {
@@ -151,7 +156,6 @@ export class UserService {
   }
 
   async createSession(userId: string, sessionToken: string, ipAddress?: string, userAgent?: string) {
-
     const session = await this.prisma.userSession.create({
       data: {
         userId,
@@ -161,7 +165,6 @@ export class UserService {
         expiresAt: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
       },
     });
-
     return session;
   }
 
@@ -179,8 +182,7 @@ export class UserService {
   async getSessionsByUserId(userId: string) {
     return this.prisma.userSession.findMany({
       where: { userId },
-      orderBy: { createdAt: 'desc' }, 
+      orderBy: { createdAt: 'desc' },
     });
   }
-  
 }
