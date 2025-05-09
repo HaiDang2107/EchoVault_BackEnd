@@ -38,7 +38,7 @@ export class NewCapsuleDto {
   @IsArray()
   recallQuestions?: NewRecallQuestionDto[];
 
-  @ApiProperty({ description: 'Notification interval in days', minimum: 1, maximum: 30 })
+  @ApiProperty({ description: 'Number of times to be notify', minimum: 1, maximum: 5, default: 2 })
   @IsInt()
   @Min(1)
   @Max(30)

@@ -22,15 +22,19 @@ import {
   CapsuleNotFoundException,
   CapsuleNotOpenedException,
 } from './exceptions/capsule.exception';
-
-import { getYourViewCapsuleQuery } from 'src/utils/capsuleQuery.util';
 import {formatInTimeZone} from 'date-fns-tz';
 
 const timeZone = 'Asia/Bangkok'; // GMT+7
 
+import { NotificationService } from 'src/module/notification/notification.service';
+import { NotificationType } from '../notification/dto/capsuleNoti.dto';
+
 @Injectable()
 export class CapsuleService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationService: NotificationService,
+  ) {}
 
   async createCapsule(dto: Omit<NewCapsuleDto, 'userId'>, userId: string): Promise<ApiResponseDto> {
     return await this.prisma.$transaction(async (prisma) => {
@@ -49,7 +53,7 @@ export class CapsuleService {
         },
       });
   
-      // Step 4: Add the owner as a viewer (if the capsule is private)
+      // Step 2: Add the owner as a viewer (if the capsule is private)
       if (dto.privacy === 'Private') {
         // Ensure viewers are provided for private capsules
         if (!dto.viewers || dto.viewers.length === 0) {
@@ -66,7 +70,7 @@ export class CapsuleService {
         });
       }
   
-      // Step 5: Create recall questions
+      // Step 3: Create recall questions
       if (dto.recallQuestions && dto.recallQuestions.length > 0) {
         for (const questionDto of dto.recallQuestions) {
           await prisma.recallQuestion.create({
@@ -83,6 +87,14 @@ export class CapsuleService {
           });
         }
       }
+
+      // Step 4: Create Notification
+      await this.notificationService.createScheduledNotificationsForCapsule(
+        capsule.id,
+        userId,
+        dto.openingTime,
+        dto.notificationInterval,
+      );
   
       // Return success response
       return { statusCode: 201, message: 'Capsule created successfully.' } as ApiResponseDto;
@@ -200,6 +212,24 @@ export class CapsuleService {
         createdAt: new Date(),
       },
     });
+
+    //Give notification to the capsule owner
+    const capsule = await this.prisma.capsule.findUnique({
+      where: { id: dto.capsuleId },
+      select: { userId: true },
+    });
+    if (capsule) {
+      const commenter = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { displayName: true },
+      });
+      await this.notificationService.createImmediateNotification(
+        capsule.userId,
+        NotificationType.NewComment,
+        `New comment on your capsule from ${commenter?.displayName || 'Your friend'}`,
+        dto.capsuleId,
+      );
+    }
   
     return {
       statusCode: 200,
@@ -249,6 +279,24 @@ export class CapsuleService {
         createdAt: new Date(formatInTimeZone(new Date(), timeZone, 'yyyy-MM-dd HH:mm:ss')),
       },
     });
+
+    //Give notification to the capsule owner
+    const capsule = await this.prisma.capsule.findUnique({
+      where: { id: dto.capsuleId },
+      select: { userId: true },
+    });
+    if (capsule) {
+      const reactor = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { displayName: true },
+      });
+      await this.notificationService.createImmediateNotification(
+        capsule.userId,
+        NotificationType.NewReaction,
+        `New reaction on your capsule from ${reactor?.displayName || 'Your friend'}`,
+        dto.capsuleId,
+      );
+    }
   
     return {
       statusCode: 200,
