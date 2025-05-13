@@ -7,10 +7,18 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         super();
     }
     async onModuleInit() {
+      try {
         await this.$connect();
+      } catch (error) {
+        console.error('Prisma connection error:', error);
+      }
       }
     
       async onModuleDestroy() {
-        await this.$disconnect();
+        try {
+          await this.$disconnect();
+        } catch (error) {
+          console.error('Prisma disconnection error:', error);
+        }
       }
 }

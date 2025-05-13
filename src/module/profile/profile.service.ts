@@ -1,10 +1,22 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApiResponseDto } from './dto/response.dto';
+import { UpdateAvatarDto } from '../capsule/dto';
+import aws from 'aws-sdk';
+import { File } from 'multer';
 
 @Injectable()
 export class ProfileService {
-  constructor(private prisma: PrismaService) {}
+  private s3: aws.S3;
+
+  constructor(private prisma: PrismaService) {
+    this.prisma = prisma;
+    this.s3 = new aws.S3({
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      region: process.env.AWS_REGION,
+    });
+  }
 
   // 1. Send a friend request
   async sendFriendRequest(senderId: string, receiverId: string): Promise<ApiResponseDto> {
@@ -51,7 +63,7 @@ export class ProfileService {
             id: true,
             email: true,
             displayName: true,
-            avatar: true,
+            avatarUrl: true,
           },
         },
       },
@@ -154,6 +166,47 @@ export class ProfileService {
       data: capsules,
     } as ApiResponseDto;
   }
+
+  async uploadAvatar(dto: UpdateAvatarDto, file: File) {
+      // Kiểm tra user tồn tại
+      const user = await this.prisma.user.findUnique({
+        where: { id: dto.userId },
+      });
+  
+      if (!user) {
+        throw new BadRequestException('User not found');
+      }
+  
+      // Upload ảnh lên S3
+      const params = {
+        Bucket: 'testecho123',
+        Key: `avatars/${Date.now()}-${file.originalname}`,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+      };
+  
+      const data = await this.s3.upload(params).promise();
+      const avatarUrl = data.Location;
+  
+      // Cập nhật avatarUrl trong bảng User
+      await this.prisma.user.update({
+        where: { id: dto.userId },
+        data: { avatarUrl },
+      });
+  
+      return {
+        message: 'Avatar uploaded successfully',
+        userId: dto.userId,
+        avatarUrl,
+      };
+    }
+  
+    // Phương thức khác (như findUserByEmail) giữ nguyên
+    async findUserByEmail(email: string) {
+      return this.prisma.user.findUnique({
+        where: { email },
+      });
+    }
 
   async getUserFriends(userId: string): Promise<ApiResponseDto> {
     const friends = await this.prisma.$queryRaw`

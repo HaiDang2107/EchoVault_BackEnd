@@ -38,7 +38,7 @@ export class AuthController {
 
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@Request() req, @Res() res: Response) {
+  async login(@Request() req, @Res({ passthrough: true }) res: Response) {
     const token = await this.authService.login(req.user);
 
     // Lưu JWT vào cookie
@@ -47,8 +47,7 @@ export class AuthController {
       sameSite: 'strict', // Ngăn gửi cookie trong yêu cầu cross-site
       maxAge: 3600000,  // Thời gian sống của cookie (1 giờ)
     });
-
-    return res.status(200).json({ message: 'Log in successfully' });;
+    return { message: 'Log in successfully', token: token.access_token, UserID: req.user.id };
   }
 
   @Post('logout')
@@ -60,5 +59,20 @@ export class AuthController {
     });
     
     return res.status(200).json({ message: 'Log out successfully' });
+  }
+
+  @Post('forgot-password')
+  async forgotPassword(@Body('email') email: string) {
+    await this.authService.requestPasswordReset(email);
+    return { message: 'If that email exists, a reset link has been sent.' };
+  }
+
+  @Post('reset-password')
+  async resetPassword(
+    @Body('token') token: string,
+    @Body('newPassword') newPassword: string,
+  ) {
+    await this.authService.resetPassword(token, newPassword);
+    return { message: 'Password reset successful.' };
   }
 }

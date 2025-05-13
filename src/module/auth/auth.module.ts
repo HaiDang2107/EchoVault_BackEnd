@@ -4,14 +4,20 @@ import { AuthService } from './auth.service';
 import { PassportModule } from '@nestjs/passport'; // Passport để xác thực
 import { JwtModule } from '@nestjs/jwt'; // Để tạo JWT token
 import { UserModule } from '../user/user.module'; // Module người dùng (module User để lưu trữ thông tin người dùng)
+import { MailModule } from '../mail/mail.module';
 import { ConfigService } from '@nestjs/config';
 import { LocalStrategy } from './strategy/local.strategy';
 import { JwtStrategy } from './strategy/jwt.strategy';
 import { GoogleStrategy } from './strategy/google.strategy';
+import { JwtAuthGuard } from './guard/jwt-auth.guard';
+import { RolesGuard } from './guard/role.guard';
+import { GoogleAuthGuard } from './guard/google-auth.guard';
+import { LocalAuthGuard } from './guard/local-auth.guard';
 
 @Module({
   imports: [
     UserModule,
+    MailModule,
     PassportModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
@@ -22,7 +28,9 @@ import { GoogleStrategy } from './strategy/google.strategy';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy, GoogleStrategy],
+  providers: [AuthService, LocalStrategy, JwtStrategy, GoogleStrategy, JwtAuthGuard, RolesGuard, GoogleAuthGuard, LocalAuthGuard],
   // Nếu 1 Guard được áp dụng cho tất cả các controller thì cần thêm Guard đó vào mảng providers
+
+  exports: [JwtAuthGuard, RolesGuard],
 })
 export class AuthModule {}

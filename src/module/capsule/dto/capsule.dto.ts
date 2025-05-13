@@ -1,5 +1,6 @@
 import { IsString, IsNotEmpty, IsOptional, IsArray, IsUUID, IsDate, IsInt, IsUrl, IsBoolean, Max, Min } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform, TransformFnParams } from 'class-transformer';
 
 export class NewCapsuleDto {
   @ApiProperty({ description: 'The main content of the capsule' })
@@ -209,4 +210,60 @@ export class UpdateAdvertisementDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+}
+
+export class DeleteCapsuleDto {
+  @ApiProperty({ description: 'The UUID of the capsule to delete', example: 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d' })
+  @IsUUID('4')
+  @IsNotEmpty()
+  capsuleId!: string;
+
+  @ApiProperty({ description: 'The UUID of the user requesting the deletion', example: 'f6e5d4c3-b2a1-4c5b-8d9e-0f1a2b3c4d5e' })
+  @IsUUID('4')
+  @IsNotEmpty()
+  userId!: string;
+}
+
+export class CreateCapsuleDto {
+  @IsString()
+  userId!: string;
+
+  @IsString()
+  @IsOptional()
+  content!: string;
+
+  @IsString()
+  @IsOptional()
+  description!: string;
+
+  @IsString()  
+  @IsOptional()
+  privacy!: string;
+
+  @IsInt()
+  @IsOptional()
+  @Transform(({ value }: TransformFnParams) => parseInt(value))
+  notificationInterval!: number;
+
+  @IsString()
+  @IsOptional()
+  openingTime!: string;
+
+  @IsOptional()
+  @IsString()
+  theme?: string;
+
+  @IsString()
+  capsuleId!: string;
+}
+
+export class UpdateAvatarDto {
+  @IsString()
+  userId!: string;
+}
+
+
+export class UpdateAvatarCapsuleDto {
+  @IsString()
+  capsuleId!: string;
 }

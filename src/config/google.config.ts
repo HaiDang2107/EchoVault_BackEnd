@@ -1,4 +1,3 @@
-// src/config/google.config.ts
 import { registerAs } from '@nestjs/config';
 
 export const googleConfig = registerAs('google', () => ({

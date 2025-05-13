@@ -11,4 +11,11 @@ export class AuthDto {
   @IsString()
   @IsNotEmpty()
   password!: string;
+
+  @ApiProperty({ description: 'The display name' })
+  @IsString()
+  @IsNotEmpty()
+  displayName!: string;
+
+  role?: string;
 }
