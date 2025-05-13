@@ -4,7 +4,7 @@ import { CapsuleService } from "./capsule.service";
 import { PrismaModule } from '../prisma/prisma.module';
 import { OpenCapsuleService } from "./open-capsule.service";
 import { MulterModule } from '@nestjs/platform-express';
-import multer, {File} from 'multer';
+import * as multer from 'multer';
 
 @Module({
     imports: [PrismaModule, 

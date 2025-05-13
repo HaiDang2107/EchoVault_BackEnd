@@ -27,7 +27,8 @@ import {
   CapsuleNotOpenedException,
 } from './exceptions/capsule.exception';
 import {formatInTimeZone} from 'date-fns-tz';
-import aws from 'aws-sdk';
+//import aws from 'aws-sdk';
+import * as aws from 'aws-sdk';
 import { PrismaClient } from '@prisma/client';
 import express, { Request, Response } from 'express';
 import multer, {File} from 'multer';

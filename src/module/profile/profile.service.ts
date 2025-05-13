@@ -2,7 +2,8 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApiResponseDto } from './dto/response.dto';
 import { UpdateAvatarDto } from '../capsule/dto';
-import aws from 'aws-sdk';
+//import aws from 'aws-sdk';
+import * as aws from 'aws-sdk';
 import { File } from 'multer';
 
 @Injectable()
