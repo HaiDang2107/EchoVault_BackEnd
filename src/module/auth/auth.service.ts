@@ -7,7 +7,6 @@ import { UserService } from '../user/user.service';
 import { JwtPayload } from './interface/jwt-payload.interface';
 import { User } from '@prisma/client';
 import { randomBytes } from 'crypto';
-import { PasswordUtil } from 'src/utils/passwordRegex.util';
 import * as argon2 from 'argon2';
 
 @Injectable()
@@ -26,12 +25,6 @@ export class AuthService {
       throw new Error('Username already exists'); // Lỗi nếu tên người dùng đã tồn tại
     }
 
-    // Validate password strength
-    const passwordStrength = PasswordUtil.checkPasswordStrength(dto.password);
-    if (passwordStrength === 'Weak' || passwordStrength === 'Invalid') {
-      throw new BadRequestException('Password is too weak or invalid');
-    }
-
     //Generate password hash using argon 2
     const hash = await argon2.hash(dto.password);
 
@@ -43,17 +36,12 @@ export class AuthService {
   }
 
   // Phương thức cấp JWT token cho người dùng sau khi login
-  async login(user: User, ipAddress: string, userAgent: string) {
-    const sessionToken = randomBytes(32).toString('hex');
-
+  async login(user: User) {
     const payload: JwtPayload = {
       username: user.email,
-      sessionToken: sessionToken,
       sub: user.id,
       role: user.role,
     }; // Tạo payload cho JWT token
-
-    await this.userService.createSession(user.id, sessionToken, ipAddress, userAgent);
 
     // Tạo token và trả về cho người dùng
     return {
@@ -63,9 +51,6 @@ export class AuthService {
     };
   }
 
-  async logout(sessionToken: string) {
-    this.userService.deleteSession(sessionToken);
-  }
   // Method gửi link tới email của user
   async requestPasswordReset(email: string) {
     const user = await this.userService.findUserByEmail(email);

@@ -12,6 +12,10 @@ import {
   CreateAdvertisementDto,
   UpdateAdvertisementDto,
   CapsuleDto,
+  DeleteCapsuleDto,
+  CreateCapsuleDto,
+  UpdateAvatarDto,
+  UpdateAvatarCapsuleDto,
 } from './dto/capsule.dto';
 import {
   OpenedCapsuleInfoResponseDto,
@@ -23,19 +27,36 @@ import {
   CapsuleNotOpenedException,
 } from './exceptions/capsule.exception';
 import {formatInTimeZone} from 'date-fns-tz';
+import aws from 'aws-sdk';
+import { PrismaClient } from '@prisma/client';
+import express, { Request, Response } from 'express';
+import multer, {File} from 'multer';
 
 const timeZone = 'Asia/Bangkok'; // GMT+7
 
-import { NotificationService } from 'src/module/notification/notification.service';
-import { NotificationType } from '../notification/dto/capsuleNoti.dto';
-
 @Injectable()
-export class CapsuleService {
-  constructor(
-    private prisma: PrismaService,
-    private notificationService: NotificationService,
-  ) {}
 
+export class CapsuleService {
+  private prisma: PrismaService;
+  private s3: aws.S3; // Khai báo kiểu cụ thể
+
+  constructor(prisma: PrismaService) {
+    this.prisma = prisma;
+
+    const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
+    const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
+    const region = process.env.AWS_REGION;
+
+    if (!accessKeyId || !secretAccessKey || !region) {
+      throw new Error('Missing AWS credentials or region in .env');
+    }
+
+    this.s3 = new aws.S3({
+      accessKeyId,
+      secretAccessKey,
+      region,
+    });
+  }
   async createCapsule(dto: Omit<NewCapsuleDto, 'userId'>, userId: string): Promise<ApiResponseDto> {
     return await this.prisma.$transaction(async (prisma) => {
       // Step 1: Create the capsule
@@ -48,12 +69,12 @@ export class CapsuleService {
           privacy: dto.privacy,
           notificationInterval: dto.notificationInterval,
           openingTime: dto.openingTime,
-          createdAt: new Date('yyyy-MM-dd HH:mm:ss'), // Convert to UTC
+          createdAt: new Date(), // Convert to UTC
           status: 'Locked', // Default status
         },
       });
   
-      // Step 2: Add the owner as a viewer (if the capsule is private)
+      // Step 4: Add the owner as a viewer (if the capsule is private)
       if (dto.privacy === 'Private') {
         // Ensure viewers are provided for private capsules
         if (!dto.viewers || dto.viewers.length === 0) {
@@ -70,7 +91,7 @@ export class CapsuleService {
         });
       }
   
-      // Step 3: Create recall questions
+      // Step 5: Create recall questions
       if (dto.recallQuestions && dto.recallQuestions.length > 0) {
         for (const questionDto of dto.recallQuestions) {
           await prisma.recallQuestion.create({
@@ -87,17 +108,9 @@ export class CapsuleService {
           });
         }
       }
-
-      // Step 4: Create Notification
-      await this.notificationService.createScheduledNotificationsForCapsule(
-        capsule.id,
-        userId,
-        dto.openingTime,
-        dto.notificationInterval,
-      );
   
       // Return success response
-      return { statusCode: 201, message: 'Capsule created successfully.' } as ApiResponseDto;
+      return { statusCode: 201, message: 'Capsule created successfully.', capsuleID: capsule.id } as ApiResponseDto;
     });
   }
 
@@ -144,28 +157,33 @@ export class CapsuleService {
     });
   }
 
-  async deleteCapsule(
-    capsuleId: string,
-  ): Promise<ApiResponseDto> {
-    // Check if the capsule exists and its status is "Opened"
-    const capsule = await this.prisma.capsule.findUnique({
-      where: { id: capsuleId },
+  async deleteCapsule(dto: DeleteCapsuleDto): Promise<ApiResponseDto> {
+    return await this.prisma.$transaction(async (prisma) => {
+      // Step 1: Check if the capsule exists and belongs to the user
+      const capsule = await prisma.capsule.findUnique({
+        where: { id: dto.capsuleId },
+      });
+  
+      if (!capsule) {
+        throw new Error('Capsule not found');
+      }
+  
+      if (capsule.userId !== dto.userId) {
+        throw new Error('Unauthorized: You are not the owner of this capsule');
+      }
+  
+      // Step 2: Delete the capsule (recallQuestions will be deleted automatically via onDelete: Cascade)
+      await prisma.capsule.delete({
+        where: { id: dto.capsuleId },
+      });
+  
+      return {
+        statusCode: 200,
+        message: 'Capsule deleted successfully',
+        data: null,
+        success: true,
+      };
     });
-
-    if (!capsule) {
-      throw new CapsuleNotFoundException();
-    }
-
-    if (capsule.status !== 'Opened') {
-      throw new CapsuleNotOpenedException();
-    }
-
-    // Delete the capsule
-    await this.prisma.capsule.delete({
-      where: { id: capsuleId },
-    });
-
-    return { statusCode: 200, message: 'Success' };
   }
 
   
@@ -212,24 +230,6 @@ export class CapsuleService {
         createdAt: new Date(),
       },
     });
-
-    //Give notification to the capsule owner
-    const capsule = await this.prisma.capsule.findUnique({
-      where: { id: dto.capsuleId },
-      select: { userId: true },
-    });
-    if (capsule) {
-      const commenter = await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { displayName: true },
-      });
-      await this.notificationService.createImmediateNotification(
-        capsule.userId,
-        NotificationType.NewComment,
-        `New comment on your capsule from ${commenter?.displayName || 'Your friend'}`,
-        dto.capsuleId,
-      );
-    }
   
     return {
       statusCode: 200,
@@ -279,24 +279,6 @@ export class CapsuleService {
         createdAt: new Date(formatInTimeZone(new Date(), timeZone, 'yyyy-MM-dd HH:mm:ss')),
       },
     });
-
-    //Give notification to the capsule owner
-    const capsule = await this.prisma.capsule.findUnique({
-      where: { id: dto.capsuleId },
-      select: { userId: true },
-    });
-    if (capsule) {
-      const reactor = await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { displayName: true },
-      });
-      await this.notificationService.createImmediateNotification(
-        capsule.userId,
-        NotificationType.NewReaction,
-        `New reaction on your capsule from ${reactor?.displayName || 'Your friend'}`,
-        dto.capsuleId,
-      );
-    }
   
     return {
       statusCode: 200,
@@ -342,24 +324,44 @@ export class CapsuleService {
   }
 
   async getCapsuleReactions(capsuleId: string): Promise<ApiResponseDto> {
-    const reactions = await this.prisma.$queryRaw`
-      SELECT * FROM get_capsule_reactions(${capsuleId}::uuid);
-    `;
+    type CapsuleReactions = {
+      reactionId: string;
+      userId: string;
+      capsuleId: string;
+      reactionType: string;
+      createdAt: Date;
+    };
+    await this.prisma.$executeRawUnsafe(`BEGIN;`);
+    await this.prisma.$executeRawUnsafe(`CALL get_capsule_reactions('${capsuleId}', 'reactioncursor');`);
+
+    // Fetch the results from the cursor
+    const fetchedReactions = (await this.prisma.$queryRawUnsafe(`FETCH ALL FROM reactioncursor;`)) as CapsuleReactions[];
+    await this.prisma.$executeRawUnsafe(`COMMIT;`);
     return {
       statusCode: 200,
       message: 'Success',
-      data: reactions,
+      data: fetchedReactions,
     } as ApiResponseDto;
   }
 
   async getCapsuleComments(capsuleId: string): Promise<ApiResponseDto> {
-    const comments = await this.prisma.$queryRaw`
-      SELECT * FROM get_capsule_comments(${capsuleId}::uuid);
-    `;
+    type CapsuleComments = {
+      commentId: string;
+      userId: string;
+      commenter_email: string;
+      commentText: string;
+      createdAt: Date;
+      updatedAt: Date;
+    };
+    await this.prisma.$executeRawUnsafe(`BEGIN;`);
+    await this.prisma.$executeRawUnsafe(`CALL get_capsule_comments('${capsuleId}', 'commentcursor');`) ;
+
+    const fetchedComments = await this.prisma.$queryRawUnsafe(`FETCH ALL FROM commentcursor;`) as CapsuleComments[];
+    await this.prisma.$executeRawUnsafe(`COMMIT;`);
     return {
       statusCode: 200,
       message: 'Success',
-      data: comments,
+      data: fetchedComments,
     } as ApiResponseDto;
   }
 
@@ -412,4 +414,133 @@ export class CapsuleService {
     } as ApiResponseDto;
   }
 
+  async uploadAvatarCapsule(dto: UpdateAvatarCapsuleDto, file: File) {
+    // Kiểm tra capsule tồn tại
+    const capsule = await this.prisma.capsule.findUnique({
+      where: { id: dto.capsuleId },
+    });
+
+    if (!capsule) {
+      throw new BadRequestException('Capsule not found');
+    }
+
+    // Upload ảnh lên S3
+    const params = {
+      Bucket: 'testecho123',
+      Key: `avatars/${Date.now()}-${file.originalname}`,
+      Body: file.buffer,
+      ContentType: file.mimetype,
+    };
+
+    const data = await this.s3.upload(params).promise();
+    const imageUrl = data.Location;
+
+    // Cập nhật imageUrl trong bảng Capsule
+    await this.prisma.capsule.update({
+      where: { id: dto.capsuleId },
+      data: { imageUrl }, 
+    });
+
+    return {
+      message: 'Avatar uploaded successfully to capsule',
+      capsuleId: dto.capsuleId,
+      imageUrl,
+    };
+  }
+
+  // Phương thức khác (như findCapsuleById) giữ nguyên nếu có
+  async findCapsuleById(id: string) {
+    return this.prisma.capsule.findUnique({
+      where: { id },
+    });
+  }
+
+  async uploadMediatoCapsule(dto: CreateCapsuleDto, file: File) {
+  const params = {
+    Bucket: 'testecho123',
+    Key: `capsules/${Date.now()}-${file.originalname}`,
+    Body: file.buffer,
+    ContentType: file.mimetype,
+  };
+
+  const data = await this.s3.upload(params).promise();
+  const imageUrl = data.Location;
+
+  // Tìm capsule đã tồn tại dựa trên capsuleId (giả sử dto chứa capsuleId)
+  const capsule = await this.prisma.capsule.findUnique({
+    where: { id: dto.capsuleId || dto.userId },
+  });
+
+  if (!capsule) {
+    throw new BadRequestException('Capsule not found');
+  }
+
+  const user = await this.prisma.user.findUnique({
+    where: { id: dto.userId },
+  });
+
+  // Tạo bản ghi trong bảng CapsuleMedia để liên kết ảnh với capsule
+  await this.prisma.capsuleMedia.create({
+    data: {
+      mediaId: crypto.randomUUID(),
+      capsuleId: capsule.id,
+      mediaUrl: imageUrl,
+      mediaType: file.mimetype,
+      uploadedBy: dto.userId,
+      uploadedAt: new Date(),
+      metadata: '{"resolution": "1920x1080"}',
+    },
+  });
+
+  return {
+    message: 'Image uploaded successfully to existing capsule',
+    capsuleId: capsule.id,
+    imageUrl: imageUrl,
+  };
+}
+
+  async getCapsulesDashboard (userId: string, page: number, limit: number, statusFilter?: string): Promise<ApiResponseDto> {
+    const capsules = await this.prisma.$queryRaw<any[]>`
+      SELECT * FROM get_capsule_dashboard(
+      ${userId}::uuid,
+      ${page}::int,
+      ${limit}::int,
+      ${statusFilter ?? null}::text
+    );
+    `;
+    //Need the skp atribute as we load data eventually
+    console.log("capsule",capsules);
+
+    // Fetch active advertisements
+    const advertisements = await this.prisma.$queryRaw<any[]>`
+    SELECT * FROM get_active_advertisements();
+  `;
+
+  // Inject ads after every X capsules
+  const INSERT_AFTER = 2;
+  const result: any[] = [];
+  let adIndex = 0;
+
+  
+
+  if(capsules != null){
+    capsules.forEach((capsule, index) => {
+      result.push({ type: 'capsule', data: capsule });
+  
+      // After every X capsules, insert one ad
+      if ((index + 1) % INSERT_AFTER === 0 && advertisements.length > 0) {
+        const ad = advertisements[adIndex % advertisements.length]; // loop ads
+        result.push({ type: 'ad', data: ad });
+        adIndex++;
+      }
+    });
+  }
+  
+
+    return {
+      statusCode: 200,
+      message: 'Success',
+      data: result,
+    } as ApiResponseDto;
+  }
 }

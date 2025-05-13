@@ -9,6 +9,10 @@ import {
   HttpStatus,
   UseGuards,
   Request,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -22,6 +26,11 @@ import {
   NewCapsuleDto,
   GiveCommentDto,
   GiveReactionDto,
+  NewRecallQuestionDto,
+  DeleteCapsuleDto,
+  CreateCapsuleDto,
+  UpdateAvatarDto,
+  UpdateAvatarCapsuleDto,
 } from './dto/capsule.dto';
 import {
   OpenedCapsuleInfoResponseDto,
@@ -30,19 +39,70 @@ import {
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
 import { OpenCapsuleService } from './open-capsule.service';
 import { SubmitAnswerDto } from './dto';
-import { GetCapsuleService } from './get-capsule.service';
-
-
+import { validate } from 'class-validator';
+import { plainToInstance } from 'class-transformer';
+import { File } from 'multer';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('Capsules')
 @Controller('capsules')
 @UseGuards(JwtAuthGuard)
+
+
 export class CapsuleController {
   constructor(
     private readonly capsuleService: CapsuleService,
     private readonly openCapsuleService: OpenCapsuleService,
-    private readonly getCapsuleService: GetCapsuleService,
   ) {}
+
+  @Post('uploadAvatar')
+  @ApiOperation({ summary: 'Upload an avatar for a capsule' })
+  @ApiBody({ type: UpdateAvatarCapsuleDto })
+  @ApiResponse({ status: 201, description: 'Avatar uploaded successfully' })
+  @UseInterceptors(FileInterceptor('avatar'))
+  async uploadCapsuleAvatar(
+    @UploadedFile() file: File,
+    @Body() body: UpdateAvatarCapsuleDto,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No avatar file uploaded');
+    }
+
+    try {
+      const result = await this.capsuleService.uploadAvatarCapsule(body, file);
+      return result;
+    } catch (error) {
+      console.error(error);
+      if (error instanceof Error) {
+        throw new InternalServerErrorException('Error uploading capsule avatar', error.message);
+      } else {
+        throw new InternalServerErrorException('Error uploading capsule avatar', 'Unknown error occurred');
+      }
+    }
+  }
+
+  @Post('uploadMedia')
+  @ApiOperation({ summary: 'Upload an image' })
+  @ApiBody({ type: CreateCapsuleDto })
+  @ApiResponse({ status: 201, description: 'Image uploaded successfully' })
+  @UseInterceptors(FileInterceptor('image')) // Handle file upload with key 'image'
+  async uploadCapsuleImage(
+    @UploadedFile() file: File,
+    @Body() body: CreateCapsuleDto,
+  ) {
+    if (!file) {
+      return { status: 400, json: { message: 'No image file uploaded' } };
+    }
+
+    try {
+      const result = await this.capsuleService.uploadMediatoCapsule(body, file);
+      return { status: 201, json: result };
+    } catch (error) {
+      console.error(error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return { status: 500, json: { message: 'Error uploading image or creating capsule', error: errorMessage } };
+    }
+  }
 
   @Post('createCapsule')
   @ApiOperation({ summary: 'Create a new capsule' })
@@ -56,13 +116,13 @@ export class CapsuleController {
     return await this.capsuleService.createCapsule(dto, userId);
   }
 
-  @Delete('deleteCapsule:id')
-  @ApiOperation({ summary: 'Delete a capsule by ID' })
-  @ApiParam({ name: 'id', required: true })
-  @ApiResponse({ status: 200, description: 'Capsule deleted successfully' })
-  async deleteCapsule(@Param('id') capsuleId: string): Promise<ApiResponseDto> {
-    return await this.capsuleService.deleteCapsule(capsuleId);
-  }
+  @Delete('deleteCapsule')
+@ApiOperation({ summary: 'Delete a capsule' })
+@ApiBody({ type: DeleteCapsuleDto })
+@ApiResponse({ status: 200, description: 'Capsule deleted successfully' })
+async deleteCapsule(@Body() dto: DeleteCapsuleDto): Promise<ApiResponseDto> {
+  return this.capsuleService.deleteCapsule(dto);
+}
 
   @Post('giveComment')
   @ApiOperation({ summary: 'Submit a comment to a capsule' })
@@ -88,6 +148,23 @@ export class CapsuleController {
     return await this.capsuleService.giveReaction(dto, userId);
   }
 
+  @Post('dashboard')
+  @ApiOperation({ summary: 'Get user dashboard capsules with pagination and filter' })
+  @ApiResponse({ status: 200, description: 'Dashboard data fetched' })
+  async getCapsulesDashboard(
+    @Request() req,
+    @Body('page') page: number,
+    @Body('limit') limit: number,
+    @Body('statusFilter') statusFilter?: string,
+  ): Promise<ApiResponseDto> {
+    const userId = req.user.id;
+    return await this.capsuleService.getCapsulesDashboard(
+      userId,
+      page,
+      limit,
+      statusFilter,
+    );
+  }
 
   @Post(':capsuleId/open-request')
   @ApiOperation({ summary: 'Request to open a capsule' })
@@ -174,30 +251,17 @@ export class CapsuleController {
     return await this.capsuleService.getCapsuleComments(capsuleId);
   }
 
-  @Get(':capsuleId')
-  @ApiOperation({ summary: 'Get capsule info' })
-  @ApiParam({ name: 'capsuleId', required: true })
-  async getCapsuleInfo(
-    @Param('capsuleId') capsuleId: string,
-    @Request() req,
+  @Post('createRecallQuestion')
+  async createRecallQuestion(
+    @Body() dto: NewRecallQuestionDto,
   ): Promise<ApiResponseDto> {
-    const userId = req.user.id;
-    return await this.getCapsuleService.getCapsuleInfo(capsuleId, userId);
-  }
-
-  @Get('canViewCapsule')
-  @ApiOperation({ summary: 'Get capsules that user can view' })
-  @ApiResponse({ status: 200, description: 'List of capsules user can view', type: ApiResponseDto })
-  async getCanViewCapsule(@Request() req): Promise<ApiResponseDto> {
-    const userId = req.user.id;
-    return await this.getCapsuleService.getCanViewCapsule(userId, 1, 100);
-  }
-
-  @Get('canBeOpenedCapsule')
-  @ApiOperation({ summary: 'Get capsules that can be opened now' })
-  @ApiResponse({ status: 200, description: 'List of capsules that can be opened now', type: ApiResponseDto })
-  async getCanBeOpenedCapsule(@Request() req): Promise<ApiResponseDto> {
-    const userId = req.user.id;
-    return await this.getCapsuleService.getCanBeOpenedCapsule(userId);
-  }
+      const recallQuestion = await this.capsuleService.createRecallQuestion(dto);
+      return {
+        statusCode: HttpStatus.CREATED,
+        message: 'Recall question created successfully',
+        data: recallQuestion,
+      };
+    }
 }
+
+

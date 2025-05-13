@@ -1,13 +1,11 @@
 import { Module } from '@nestjs/common';
 import { UserService } from './user.service';
 import { PrismaModule } from '../prisma/prisma.module';
-import { UserController } from './user.controller';
-import { NotificationModule } from '../notification/notification.module';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Module({
-  imports: [PrismaModule, NotificationModule],
-  providers: [UserService],
-  controllers: [UserController],
+  imports: [PrismaModule],
+  providers: [PrismaService, UserService],
   exports: [UserService], // Export để sử dụng trong các module khác
 })
 export class UserModule {}

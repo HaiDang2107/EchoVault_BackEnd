@@ -5,11 +5,17 @@ import {
   Body,
   Request,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
+  InternalServerErrorException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody, ApiResponse } from '@nestjs/swagger';
 import { ProfileService } from './profile.service';
 import { ApiResponseDto } from './dto/response.dto';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
+import { UpdateAvatarDto } from '../capsule/dto';
+import { FileInterceptor } from 'node_modules/@nestjs/platform-express';
 
 @ApiTags('Profile') // Group in Swagger UI
 @ApiBearerAuth() // Enables "Authorize" button in Swagger
@@ -17,6 +23,28 @@ import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
 @Controller('profile')
 export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
+  
+  @Post('uploadAvatar')
+  @ApiOperation({ summary: 'Upload an avatar for a user' })
+  @ApiBody({ type: UpdateAvatarDto })
+  @ApiResponse({ status: 201, description: 'Avatar uploaded successfully' })
+  @UseInterceptors(FileInterceptor('avatar'))
+  async uploadAvatar(
+    @UploadedFile() file: File,
+    @Body() body: UpdateAvatarDto,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No avatar file uploaded');
+    }
+
+    try {
+      const result = await this.profileService.uploadAvatar(body, file);
+      return result;
+    } catch (error:any ) {
+      console.error(error);
+      throw new InternalServerErrorException('Error uploading profile avatar', error.message);
+    }
+  }
 
   @Post('request')
   @ApiOperation({ summary: 'Send a friend request' })
@@ -77,60 +105,5 @@ export class ProfileController {
   async getNotifications(@Request() req): Promise<ApiResponseDto> {
     const userId = req.user.id;
     return await this.profileService.getNotifications(userId);
-  }
-
-  @ApiOperation({ summary: 'Get user info' })
-  @Get('profile')
-  async getProfile(@Request() req): Promise<ApiResponseDto> {
-    const userId = req.user.id; // Assuming JWT payload has 'id' as user ID
-    if (!userId) {
-      return {
-        statusCode: 401,
-        message: 'Unauthorized',
-      };
-    }
-    const user = await this.profileService.getUserProfile(userId);
-    return {
-      statusCode: 200,
-      message: 'Get user success',
-      data: user,
-    };
-  }
-
-  @ApiOperation({ summary: 'Update user info' })
-  @Post('update')
-  @ApiBody({
-    schema: {
-      example: {
-        displayName: 'New Display Name',
-        email: 'example email',
-        avatar: 'https://example.com/avatar.jpg',
-      },
-    },
-  })
-  async updateProfile(
-    @Request() req,
-    @Body() updateProfileDto: {
-      displayName: string;
-      email: string;
-      avatar: string;
-    },
-  ): Promise<ApiResponseDto> {
-    const userId = req.user.id; // Assuming JWT payload has 'id' as user ID
-    if (!userId) {
-      return {
-        statusCode: 401,
-        message: 'Unauthorized',
-      };
-    }
-    const updatedUser = await this.profileService.updateUserProfile(
-      userId,
-      updateProfileDto,
-    );
-    return {
-      statusCode: 200,
-      message: 'Update user success',
-      data: updatedUser,
-    };
   }
 }

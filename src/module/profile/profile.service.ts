@@ -1,14 +1,22 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApiResponseDto } from './dto/response.dto';
-import { NotificationService } from '../notification/notification.service';
-import { NotificationType } from '../notification/dto/capsuleNoti.dto';
+import { UpdateAvatarDto } from '../capsule/dto';
+import aws from 'aws-sdk';
+import { File } from 'multer';
+
 @Injectable()
 export class ProfileService {
-  constructor(
-    private prisma: PrismaService,
-    private notificationService: NotificationService,
-  ) {}
+  private s3: aws.S3;
+
+  constructor(private prisma: PrismaService) {
+    this.prisma = prisma;
+    this.s3 = new aws.S3({
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      region: process.env.AWS_REGION,
+    });
+  }
 
   // 1. Send a friend request
   async sendFriendRequest(senderId: string, receiverId: string): Promise<ApiResponseDto> {
@@ -26,7 +34,7 @@ export class ProfileService {
       throw new BadRequestException('Friend request already exists.');
     }
 
-    
+    // Create a new friend request
     const friendRequest = await this.prisma.friendRequest.create({
       data: {
         senderId,
@@ -34,21 +42,6 @@ export class ProfileService {
         status: 'PENDING',
       },
     });
-
-    // Send a notification to the receiver
-    // Create a new friend request
-    const sender = await this.prisma.user.findUnique({
-      where: { id: senderId },
-      select: {
-        displayName: true,
-      }
-    });
-    await this.notificationService.createImmediateNotification(
-      receiverId,
-      NotificationType.FriendRequest,
-      `You have received a friend request from ${sender?.displayName}.`
-    );
-
 
     return {
       statusCode: 201,
@@ -70,7 +63,7 @@ export class ProfileService {
             id: true,
             email: true,
             displayName: true,
-            avatar: true,
+            avatarUrl: true,
           },
         },
       },
@@ -121,19 +114,6 @@ export class ProfileService {
         { userId: senderId, friendId: receiverId },
       ],
     });
-
-    // Send a notification to the sender
-    const receiver = await this.prisma.user.findUnique({
-      where: { id: receiverId },
-      select: {
-        displayName: true,
-      }
-    });
-    await this.notificationService.createImmediateNotification(
-      senderId,
-      NotificationType.FriendRequest,
-      `Your friend request to ${receiver?.displayName} has been accepted.`
-    );
 
     return {
       statusCode: 200,
@@ -187,6 +167,47 @@ export class ProfileService {
     } as ApiResponseDto;
   }
 
+  async uploadAvatar(dto: UpdateAvatarDto, file: File) {
+      // Kiểm tra user tồn tại
+      const user = await this.prisma.user.findUnique({
+        where: { id: dto.userId },
+      });
+  
+      if (!user) {
+        throw new BadRequestException('User not found');
+      }
+  
+      // Upload ảnh lên S3
+      const params = {
+        Bucket: 'testecho123',
+        Key: `avatars/${Date.now()}-${file.originalname}`,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+      };
+  
+      const data = await this.s3.upload(params).promise();
+      const avatarUrl = data.Location;
+  
+      // Cập nhật avatarUrl trong bảng User
+      await this.prisma.user.update({
+        where: { id: dto.userId },
+        data: { avatarUrl },
+      });
+  
+      return {
+        message: 'Avatar uploaded successfully',
+        userId: dto.userId,
+        avatarUrl,
+      };
+    }
+  
+    // Phương thức khác (như findUserByEmail) giữ nguyên
+    async findUserByEmail(email: string) {
+      return this.prisma.user.findUnique({
+        where: { email },
+      });
+    }
+
   async getUserFriends(userId: string): Promise<ApiResponseDto> {
     const friends = await this.prisma.$queryRaw`
       SELECT * FROM get_user_friends(${userId}::uuid);
@@ -206,50 +227,6 @@ export class ProfileService {
       statusCode: 200,
       message: 'Success',
       data: notifications,
-    } as ApiResponseDto;
-  }
-
-  async getUserProfile(userId: string): Promise<ApiResponseDto> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        displayName: true,
-        avatar: true,
-        friends: {
-          select: {
-            friendId: true,
-          },
-        },
-      },
-    });
-
-    if (!user) {
-      throw new BadRequestException('User not found.');
-    }
-
-    return {
-      statusCode: 200,
-      message: 'User profile retrieved successfully.',
-      data: user,
-    } as ApiResponseDto;
-  }
-  
-  async updateUserProfile(userId: string, data: any): Promise<ApiResponseDto> {
-    const updatedUser = await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        displayName: data.displayName,
-        avatar: data.avatar,
-        timezone: data.timezone,
-      },
-    });
-
-    return {
-      statusCode: 200,
-      message: 'User profile updated successfully.',
-      data: updatedUser,
     } as ApiResponseDto;
   }
 }
