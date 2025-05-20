@@ -13,6 +13,14 @@ export class UserService {
     });
   }
 
+  // Tìm người dùng theo id
+  async getUserById(id: string) {
+    return this.prisma.user.findUnique({
+      where: { id }, // attribute id
+      include: { oauthProviders: true }, // include oauthProviders
+    });
+  }
+
   async createUser(email: string, password: string, displayName: string) {
     return this.prisma.user.create({
       data: {
@@ -147,5 +155,38 @@ export class UserService {
 
   async deletePasswordResetToken(token: string) {
     await this.prisma.passwordResetToken.delete({ where: { token: token } });
+  }
+
+  async createSession(userId: string, sessionToken: string, ipAddress?: string, userAgent?: string) {
+
+    const session = await this.prisma.userSession.create({
+      data: {
+        userId,
+        sessionToken,
+        ipAddress,
+        userAgent,
+        expiresAt: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
+      },
+    });
+
+    return session;
+  }
+
+  async deleteSession(sessionToken: string): Promise<void> {
+    try {
+      await this.prisma.userSession.delete({
+        where: { sessionToken },
+      });
+    } catch (error) {
+      console.error('Error deleting session:', error);
+      throw new Error('Session not found or already deleted');
+    }
+  }
+
+  async getSessionsByUserId(userId: string) {
+    return this.prisma.userSession.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' }, 
+    });
   }
 }
