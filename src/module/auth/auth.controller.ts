@@ -56,7 +56,7 @@ export class AuthController {
       sameSite: 'strict', // Ngăn gửi cookie trong yêu cầu cross-site
       maxAge: 3600000,  // Thời gian sống của cookie (1 giờ)
     });
-    return { message: 'Log in successfully', token: token.access_token, UserID: req.user.id };
+    return { message: 'Log in successfully', token: token.access_token };
   }
 
   @UseGuards(JwtAuthGuard)
@@ -68,7 +68,7 @@ export class AuthController {
       httpOnly: true,  
       sameSite: 'strict',
     });
-    
+
     return res.status(200).json({ message: 'Log out successfully' });
   }
 

@@ -7,9 +7,22 @@ export class UserService {
 
   // Tìm người dùng theo username
   async findUserByEmail(email: string) {
+  return this.prisma.user.findUnique({
+    where: { email },
+    select: {
+      id: true,            
+      email: true,
+      passwordHash: true,
+      role: true,
+    },
+  });
+}
+
+  // Tìm người dùng theo id
+  async getUserById(id: string) {
     return this.prisma.user.findUnique({
-      // find in User table
-      where: { email }, // attribute email
+      where: { id }, // attribute id
+      include: { oauthProviders: true }, // include oauthProviders
     });
   }
 
@@ -181,5 +194,4 @@ export class UserService {
       orderBy: { createdAt: 'desc' }, 
     });
   }
-  
 }
