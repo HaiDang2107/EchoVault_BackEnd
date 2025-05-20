@@ -13,6 +13,8 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
   async validate(email: string, password: string) {
     const user = await this.userService.findUserByEmail(email);
 
+    //console.log(`LocalStrategy 1 ${user.id}`);
+
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -22,10 +24,10 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
 
     const isPasswordValid = await argon2.verify(user.passwordHash, password);
     if (!isPasswordValid) {
-      return new UnauthorizedException('Wrong password');;
+      throw new UnauthorizedException('Wrong password');;
     }
 
-    //console.log(`LocalStrategy ${user.id}`);
+    console.log(`LocalStrategy 2 ${user.id}`);
 
     return user;
   }
