@@ -64,7 +64,13 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Post('logout')
   async logout(@Request() req, @Res() res: Response) {
-    this.authService.logout(req.jwt.sessionToken);
+    const sessionToken = req.user.sessionToken;
+
+    if (!sessionToken) {
+      return res.status(400).json({ message: 'Session token is missing' });
+    }
+
+    this.authService.logout(sessionToken);
 
     res.clearCookie('jwt', { 
       httpOnly: true,  
