@@ -48,6 +48,8 @@ export class AuthController {
     const ipAddress = req.ip || req.headers['x-forwarded-for'];
     const userAgent = req.headers['user-agent'];
 
+    //console.log(`controller ${user.id}`);
+
     const token = await this.authService.login(user, ipAddress, userAgent);
 
     // Lưu JWT vào cookie

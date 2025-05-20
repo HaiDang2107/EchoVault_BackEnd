@@ -25,6 +25,8 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
       return new UnauthorizedException('Wrong password');;
     }
 
+    //console.log(`LocalStrategy ${user.id}`);
+
     return user;
   }
 }

@@ -1,12 +1,13 @@
 import { Injectable, ExecutionContext } from '@nestjs/common';
+import { UnauthorizedException } from '@nestjs/common/exceptions'; 
 import { AuthGuard } from '@nestjs/passport';
 
 @Injectable()
 export class LocalAuthGuard extends AuthGuard('local') {
-  async canActivate(context: ExecutionContext): Promise<boolean> {
-    const result = (await super.canActivate(context)) as boolean;
-    const request = context.switchToHttp().getRequest();
-    
-    return result;
+  handleRequest(err, user, info) {
+    if (err || !user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    return user; // Passport sẽ tự gán req.user
   }
 }

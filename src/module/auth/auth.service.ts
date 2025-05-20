@@ -46,6 +46,8 @@ export class AuthService {
       role: user.role,
     }; // Tạo payload cho JWT token
 
+    //console.log(`service ${user.id}`);
+
     await this.userService.createSession(user.id, sessionToken, ipAddress, userAgent);
 
     // Tạo token và trả về cho người dùng
