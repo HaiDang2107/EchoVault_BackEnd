@@ -1,9 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class UserService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private jwtService: JwtService
+  ) {}
 
   // Tìm người dùng theo username
   async findUserByEmail(email: string) {
@@ -24,6 +28,37 @@ export class UserService {
       where: { id }, // attribute id
       include: { oauthProviders: true }, // include oauthProviders
     });
+  }
+
+  async getUserByToken(token: string) {
+    try {
+      // Decode the JWT token
+      const decoded = this.jwtService.verify(token);
+
+      // Extract the user ID (sub) from the token
+      const userId = decoded.sub;
+
+      // Fetch the user information from the database
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          displayName: true,
+          role: true,
+          avatarUrl: true,
+          createdAt: true,
+        },
+      });
+
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      return user;
+    } catch (error) {
+      throw new UnauthorizedException('Invalid or expired token');
+    }
   }
 
   async createUser(email: string, password: string, displayName: string) {

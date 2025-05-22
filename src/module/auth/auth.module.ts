@@ -1,8 +1,8 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { PassportModule } from '@nestjs/passport'; // Passport để xác thực
-import { JwtModule } from '@nestjs/jwt'; // Để tạo JWT token
+import { JwtModule, JwtService } from '@nestjs/jwt'; // Để tạo JWT token
 import { UserModule } from '../user/user.module'; // Module người dùng (module User để lưu trữ thông tin người dùng)
 import { MailModule } from '../mail/mail.module';
 import { ConfigService } from '@nestjs/config';
@@ -16,7 +16,7 @@ import { LocalAuthGuard } from './guard/local-auth.guard';
 
 @Module({
   imports: [
-    UserModule,
+    forwardRef(()=> UserModule),
     MailModule,
     PassportModule,
     JwtModule.registerAsync({
@@ -28,9 +28,16 @@ import { LocalAuthGuard } from './guard/local-auth.guard';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy, GoogleStrategy, JwtAuthGuard, RolesGuard, GoogleAuthGuard, LocalAuthGuard],
-  // Nếu 1 Guard được áp dụng cho tất cả các controller thì cần thêm Guard đó vào mảng providers
-
-  exports: [JwtAuthGuard, RolesGuard],
+  providers: [
+    AuthService,
+    LocalStrategy,
+    JwtStrategy,
+    GoogleStrategy,
+    JwtAuthGuard,
+    RolesGuard,
+    GoogleAuthGuard,
+    LocalAuthGuard,
+  ],
+  exports: [JwtAuthGuard, RolesGuard, JwtModule],
 })
 export class AuthModule {}

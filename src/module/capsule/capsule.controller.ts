@@ -47,8 +47,6 @@ import { FileInterceptor } from '@nestjs/platform-express';
 @ApiTags('Capsules')
 @Controller('capsules')
 @UseGuards(JwtAuthGuard)
-
-
 export class CapsuleController {
   constructor(
     private readonly capsuleService: CapsuleService,
@@ -74,9 +72,15 @@ export class CapsuleController {
     } catch (error) {
       console.error(error);
       if (error instanceof Error) {
-        throw new InternalServerErrorException('Error uploading capsule avatar', error.message);
+        throw new InternalServerErrorException(
+          'Error uploading capsule avatar',
+          error.message,
+        );
       } else {
-        throw new InternalServerErrorException('Error uploading capsule avatar', 'Unknown error occurred');
+        throw new InternalServerErrorException(
+          'Error uploading capsule avatar',
+          'Unknown error occurred',
+        );
       }
     }
   }
@@ -99,8 +103,15 @@ export class CapsuleController {
       return { status: 201, json: result };
     } catch (error) {
       console.error(error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      return { status: 500, json: { message: 'Error uploading image or creating capsule', error: errorMessage } };
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      return {
+        status: 500,
+        json: {
+          message: 'Error uploading image or creating capsule',
+          error: errorMessage,
+        },
+      };
     }
   }
 
@@ -117,12 +128,12 @@ export class CapsuleController {
   }
 
   @Delete('deleteCapsule')
-@ApiOperation({ summary: 'Delete a capsule' })
-@ApiBody({ type: DeleteCapsuleDto })
-@ApiResponse({ status: 200, description: 'Capsule deleted successfully' })
-async deleteCapsule(@Body() dto: DeleteCapsuleDto): Promise<ApiResponseDto> {
-  return this.capsuleService.deleteCapsule(dto);
-}
+  @ApiOperation({ summary: 'Delete a capsule' })
+  @ApiBody({ type: DeleteCapsuleDto })
+  @ApiResponse({ status: 200, description: 'Capsule deleted successfully' })
+  async deleteCapsule(@Body() dto: DeleteCapsuleDto): Promise<ApiResponseDto> {
+    return this.capsuleService.deleteCapsule(dto);
+  }
 
   @Post('giveComment')
   @ApiOperation({ summary: 'Submit a comment to a capsule' })
@@ -148,14 +159,34 @@ async deleteCapsule(@Body() dto: DeleteCapsuleDto): Promise<ApiResponseDto> {
     return await this.capsuleService.giveReaction(dto, userId);
   }
 
-  @Post('dashboard')
-  @ApiOperation({ summary: 'Get user dashboard capsules with pagination and filter' })
+  @Get('dashboard')
+  @ApiOperation({
+    summary: 'Get user dashboard capsules with pagination and filter',
+  })
   @ApiResponse({ status: 200, description: 'Dashboard data fetched' })
+  @ApiParam({
+    name: 'page',
+    required: true,
+    description: 'The page number for pagination',
+    example: 1,
+  })
+  @ApiParam({
+    name: 'limit',
+    required: true,
+    description: 'The number of items per page',
+    example: 10,
+  })
+  @ApiParam({
+    name: 'statusFilter',
+    required: false,
+    description: 'Filter capsules by status (e.g., "Locked", "Opened")',
+    example: 'Locked',
+  })
   async getCapsulesDashboard(
     @Request() req,
-    @Body('page') page: number,
-    @Body('limit') limit: number,
-    @Body('statusFilter') statusFilter?: string,
+    @Param('page') page: number,
+    @Param('limit') limit: number,
+    @Param('statusFilter') statusFilter?: string,
   ): Promise<ApiResponseDto> {
     const userId = req.user.id;
     return await this.capsuleService.getCapsulesDashboard(
@@ -180,14 +211,18 @@ async deleteCapsule(@Body() dto: DeleteCapsuleDto): Promise<ApiResponseDto> {
   @Get(':capsuleId/description')
   @ApiOperation({ summary: 'Get description of a capsule' })
   @ApiParam({ name: 'capsuleId', required: true })
-  async getDescription(@Param('capsuleId') capsuleId: string): Promise<ApiResponseDto> {
+  async getDescription(
+    @Param('capsuleId') capsuleId: string,
+  ): Promise<ApiResponseDto> {
     return await this.openCapsuleService.getDescription(capsuleId);
   }
 
   @Get(':capsuleId/questions')
   @ApiOperation({ summary: 'Get all questions of a capsule' })
   @ApiParam({ name: 'capsuleId', required: true })
-  async getQuestions(@Param('capsuleId') capsuleId: string): Promise<ApiResponseDto> {
+  async getQuestions(
+    @Param('capsuleId') capsuleId: string,
+  ): Promise<ApiResponseDto> {
     return await this.openCapsuleService.getQuestions(capsuleId);
   }
 
@@ -205,49 +240,63 @@ async deleteCapsule(@Body() dto: DeleteCapsuleDto): Promise<ApiResponseDto> {
   @Get(':capsuleId/questions/:questionId/explain')
   @ApiOperation({ summary: 'Get explanation for a specific question' })
   @ApiParam({ name: 'questionId', required: true })
-  async getExplanation(@Param('questionId') questionId: string): Promise<ApiResponseDto> {
+  async getExplanation(
+    @Param('questionId') questionId: string,
+  ): Promise<ApiResponseDto> {
     return await this.openCapsuleService.getExplanation(questionId);
   }
 
   @Get(':capsuleId/content')
   @ApiOperation({ summary: 'Get the content of an opened capsule' })
   @ApiParam({ name: 'capsuleId', required: true })
-  async getContent(@Param('capsuleId') capsuleId: string): Promise<ApiResponseDto> {
+  async getContent(
+    @Param('capsuleId') capsuleId: string,
+  ): Promise<ApiResponseDto> {
     return await this.openCapsuleService.getOpenedCapsuleById(capsuleId);
   }
 
   @Post(':capsuleId/abort')
   @ApiOperation({ summary: 'Abort opening a capsule' })
   @ApiParam({ name: 'capsuleId', required: true })
-  async abortOpenCapsule(@Param('capsuleId') capsuleId: string): Promise<ApiResponseDto> {
+  async abortOpenCapsule(
+    @Param('capsuleId') capsuleId: string,
+  ): Promise<ApiResponseDto> {
     return await this.openCapsuleService.abortOpenCapsule(capsuleId);
   }
 
   @Get(':capsuleId/viewers')
   @ApiOperation({ summary: 'Get viewers of a capsule' })
   @ApiParam({ name: 'capsuleId', required: true })
-  async getCapsuleViewers(@Param('capsuleId') capsuleId: string): Promise<ApiResponseDto> {
+  async getCapsuleViewers(
+    @Param('capsuleId') capsuleId: string,
+  ): Promise<ApiResponseDto> {
     return await this.capsuleService.getCapsuleViewers(capsuleId);
   }
 
   @Get(':capsuleId/questions')
   @ApiOperation({ summary: 'Get recall questions of a capsule' })
   @ApiParam({ name: 'capsuleId', required: true })
-  async getCapsuleQuestions(@Param('capsuleId') capsuleId: string): Promise<ApiResponseDto> {
+  async getCapsuleQuestions(
+    @Param('capsuleId') capsuleId: string,
+  ): Promise<ApiResponseDto> {
     return await this.capsuleService.getCapsuleQuestions(capsuleId);
   }
 
   @Get(':capsuleId/reactions')
   @ApiOperation({ summary: 'Get reactions of a capsule' })
   @ApiParam({ name: 'capsuleId', required: true })
-  async getCapsuleReactions(@Param('capsuleId') capsuleId: string): Promise<ApiResponseDto> {
+  async getCapsuleReactions(
+    @Param('capsuleId') capsuleId: string,
+  ): Promise<ApiResponseDto> {
     return await this.capsuleService.getCapsuleReactions(capsuleId);
   }
 
   @Get(':capsuleId/comments')
   @ApiOperation({ summary: 'Get comments of a capsule' })
   @ApiParam({ name: 'capsuleId', required: true })
-  async getCapsuleComments(@Param('capsuleId') capsuleId: string): Promise<ApiResponseDto> {
+  async getCapsuleComments(
+    @Param('capsuleId') capsuleId: string,
+  ): Promise<ApiResponseDto> {
     return await this.capsuleService.getCapsuleComments(capsuleId);
   }
 
@@ -255,13 +304,11 @@ async deleteCapsule(@Body() dto: DeleteCapsuleDto): Promise<ApiResponseDto> {
   async createRecallQuestion(
     @Body() dto: NewRecallQuestionDto,
   ): Promise<ApiResponseDto> {
-      const recallQuestion = await this.capsuleService.createRecallQuestion(dto);
-      return {
-        statusCode: HttpStatus.CREATED,
-        message: 'Recall question created successfully',
-        data: recallQuestion,
-      };
-    }
+    const recallQuestion = await this.capsuleService.createRecallQuestion(dto);
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: 'Recall question created successfully',
+      data: recallQuestion,
+    };
+  }
 }
-
-

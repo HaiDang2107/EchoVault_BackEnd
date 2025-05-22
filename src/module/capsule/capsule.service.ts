@@ -511,6 +511,7 @@ export class CapsuleService {
     `;
     //Need the skp atribute as we load data eventually
     console.log("capsule",capsules);
+    console.log("userId",userId);
 
     // Fetch active advertisements
     const advertisements = await this.prisma.$queryRaw<any[]>`
