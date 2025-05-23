@@ -81,7 +81,14 @@ export class CapsuleService {
         if (!dto.viewers || dto.viewers.length === 0) {
           throw new BadRequestException('Viewers must be provided for private capsules.');
         }
-  
+        
+        //Add the owner as a viewer
+        await prisma.capsuleViewer.create({
+          data: {
+            capsuleId: capsule.id,
+            userId: userId,
+          },
+        });
   
         // Add other viewers
         await prisma.capsuleViewer.createMany({
@@ -509,10 +516,6 @@ export class CapsuleService {
       ${statusFilter ?? null}::text
     );
     `;
-    //Need the skp atribute as we load data eventually
-    console.log("capsule",capsules);
-    console.log("userId",userId);
-
     // Fetch active advertisements
     const advertisements = await this.prisma.$queryRaw<any[]>`
     SELECT * FROM get_active_advertisements();
