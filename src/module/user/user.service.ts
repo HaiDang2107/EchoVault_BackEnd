@@ -6,21 +6,21 @@ import { JwtService } from '@nestjs/jwt';
 export class UserService {
   constructor(
     private prisma: PrismaService,
-    private jwtService: JwtService
+    private jwtService: JwtService,
   ) {}
 
   // Tìm người dùng theo username
   async findUserByEmail(email: string) {
-  return this.prisma.user.findUnique({
-    where: { email },
-    select: {
-      id: true,            
-      email: true,
-      passwordHash: true,
-      role: true,
-    },
-  });
-}
+    return this.prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        passwordHash: true,
+        role: true,
+      },
+    });
+  }
 
   // Tìm người dùng theo id
   async getUserById(id: string) {
@@ -98,8 +98,11 @@ export class UserService {
     refreshToken: string,
   ) {
     const updatedUser = await tx.user.update({
-      where: { id: existingUser.id },
-      data: { email: profile.emails[0].value },
+      where: { id: existingUser.user.id },
+      data: {
+        email: profile.emails[0].value,
+        displayName: profile.displayName,
+      },
     });
 
     await tx.oAuthProvider.update({
@@ -111,6 +114,8 @@ export class UserService {
       },
       data: { accessToken, refreshToken },
     });
+
+    console.log('Updated user successfully');
     return updatedUser;
   }
 
@@ -122,9 +127,10 @@ export class UserService {
     accessToken: string,
     refreshToken: string,
   ) {
-    return tx.user.create({
+    const newUser = tx.user.create({
       data: {
         email: profile.emails[0].value,
+        displayName: profile.displayName,
         oauthProviders: {
           create: {
             providerUserId: providerUserId,
@@ -135,6 +141,8 @@ export class UserService {
         },
       },
     });
+    console.log('Created new user successfully');
+    return newUser;
   }
 
   async updateOrInsertUserByProviderUserId(
@@ -159,14 +167,21 @@ export class UserService {
           refreshToken,
         );
       } else {
-        return this.createUserByProviderUserId(
-          tx,
-          profile,
-          provider,
-          googleID,
-          accessToken,
-          refreshToken,
+        const existingUser = await this.findUserByEmail(
+          profile.emails[0].value,
         );
+
+        if (existingUser) {
+          throw new UnauthorizedException('User already exists by signing up');
+        } else
+          return this.createUserByProviderUserId(
+            tx,
+            profile,
+            provider,
+            googleID,
+            accessToken,
+            refreshToken,
+          );
       }
     });
     return user;
@@ -197,8 +212,12 @@ export class UserService {
     await this.prisma.passwordResetToken.delete({ where: { token: token } });
   }
 
-  async createSession(userId: string, sessionToken: string, ipAddress?: string, userAgent?: string) {
-
+  async createSession(
+    userId: string,
+    sessionToken: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
     const session = await this.prisma.userSession.create({
       data: {
         userId,
@@ -226,7 +245,7 @@ export class UserService {
   async getSessionsByUserId(userId: string) {
     return this.prisma.userSession.findMany({
       where: { userId },
-      orderBy: { createdAt: 'desc' }, 
+      orderBy: { createdAt: 'desc' },
     });
   }
 }

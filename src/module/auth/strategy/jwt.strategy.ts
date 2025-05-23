@@ -27,21 +27,22 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     const user = await this.userService.getUserById(sub);
     if (!user) {
-      return new Error('User not found');
+      throw new UnauthorizedException('User not found');
     }
 
     const session = await this.userService.getSessionsByUserId(user.id);
 
     if (!session) {
-      throw new Error('Session not found');
+      throw new UnauthorizedException('Session not found');
     }
 
     if (user.email !== username || user.role !== role || session[0].sessionToken !== sessionToken || session[0].expiresAt!.getTime() < Date.now()) {
       throw new UnauthorizedException('Session expired or something else');
     }
 
-
-
-    return user;
+    return {
+    ...user,
+    sessionToken, // thêm vào req.user
+  };;
   }
 }

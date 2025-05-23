@@ -25,7 +25,7 @@ export class AuthController {
     const userAgent = req.headers['user-agent'];
 
     const token = await this.authService.login(user, ipAddress, userAgent);
-    return token;
+    return { message: 'Log in with google successfully', token: token.access_token };
     // Ở đây bạn có thể redirect người dùng về frontend cùng với token
     // Ví dụ:
     // const frontendUrl = 'YOUR_FRONTEND_URL'; // Thay bằng URL frontend của bạn
