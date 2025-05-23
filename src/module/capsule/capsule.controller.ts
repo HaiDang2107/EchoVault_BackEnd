@@ -13,6 +13,7 @@ import {
   UploadedFile,
   BadRequestException,
   InternalServerErrorException,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -20,6 +21,7 @@ import {
   ApiResponse,
   ApiBody,
   ApiParam,
+  ApiQuery
 } from '@nestjs/swagger';
 import { CapsuleService } from './capsule.service';
 import {
@@ -43,6 +45,7 @@ import { validate } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
 import { File } from 'multer';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { GetCapsuleService } from './get-capsule.service';
 
 @ApiTags('Capsules')
 @Controller('capsules')
@@ -50,6 +53,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 export class CapsuleController {
   constructor(
     private readonly capsuleService: CapsuleService,
+    private readonly getCapsuleService: GetCapsuleService,
     private readonly openCapsuleService: OpenCapsuleService,
   ) {}
 
@@ -135,6 +139,18 @@ export class CapsuleController {
     return this.capsuleService.deleteCapsule(dto);
   }
 
+  @Get('detail/:id')
+  @ApiOperation({ summary: 'Get capsule details' })
+  @ApiParam({ name: 'id', required: true })
+  @ApiResponse({ status: 200, description: 'Capsule details retrieved successfully' })
+  async getCapsuleInfo(
+    @Request() req,
+    @Param('id') id: string,
+  ) : Promise<ApiResponseDto> {
+    const userId = req.user.id
+    return this.getCapsuleService.getCapsuleInfo(id, userId);
+  }
+
   @Post('giveComment')
   @ApiOperation({ summary: 'Submit a comment to a capsule' })
   @ApiBody({ type: GiveCommentDto })
@@ -164,31 +180,19 @@ export class CapsuleController {
     summary: 'Get user dashboard capsules with pagination and filter',
   })
   @ApiResponse({ status: 200, description: 'Dashboard data fetched' })
-  @ApiParam({
-    name: 'page',
-    required: true,
-    description: 'The page number for pagination',
-    example: 1,
-  })
-  @ApiParam({
-    name: 'limit',
-    required: true,
-    description: 'The number of items per page',
-    example: 10,
-  })
-  @ApiParam({
-    name: 'statusFilter',
-    required: false,
-    description: 'Filter capsules by status (e.g., "Locked", "Opened")',
-    example: 'Locked',
-  })
+  @ApiQuery({ name: 'page', required: true, description: 'The page number for pagination', example: 1 })
+  @ApiQuery({ name: 'limit', required: true, description: 'The number of items per page', example: 10 })
+  @ApiQuery({ name: 'statusFilter', required: false, description: 'Filter capsules by status (e.g., "Locked", "Opened")', example: 'Locked' })
   async getCapsulesDashboard(
     @Request() req,
-    @Param('page') page: number,
-    @Param('limit') limit: number,
-    @Param('statusFilter') statusFilter?: string,
+    @Query('page') page: number,
+    @Query('limit') limit: number,
+    @Query('statusFilter') statusFilter?: string,
   ): Promise<ApiResponseDto> {
     const userId = req.user.id;
+    console.log(
+      `getCapsulesDashboard - userId: ${userId}, page: ${page}, limit: ${limit}, statusFilter: ${statusFilter}`,
+    );
     return await this.capsuleService.getCapsulesDashboard(
       userId,
       page,

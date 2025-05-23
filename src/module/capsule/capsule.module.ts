@@ -5,6 +5,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { OpenCapsuleService } from "./open-capsule.service";
 import { MulterModule } from '@nestjs/platform-express';
 import * as multer from 'multer';
+import { GetCapsuleService } from "./get-capsule.service";
 
 @Module({
     imports: [PrismaModule, 
@@ -13,6 +14,6 @@ import * as multer from 'multer';
     }),
     ],
     controllers: [CapsuleController],
-    providers: [CapsuleService, OpenCapsuleService],
+    providers: [CapsuleService, OpenCapsuleService, GetCapsuleService],
 })
 export class CapsuleModule {}

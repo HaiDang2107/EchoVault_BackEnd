@@ -87,4 +87,13 @@ export class GetCapsuleService {
         data: capsule,
       } as ApiResponseDto;
     }
+
+    // async getMyCapsule(userId: string): Promise<ApiResponseDto> {
+    //   const capsule = await this.prisma.capsule.findUnique({
+    //     where: {
+    //       userId,
+    //       },
+    //       include: {
+
+    // }
   }
