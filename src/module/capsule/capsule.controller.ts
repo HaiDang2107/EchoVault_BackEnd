@@ -315,4 +315,24 @@ export class CapsuleController {
       data: recallQuestion,
     };
   }
+
+  @Get('my-capsules')
+  @ApiOperation({ summary: 'Get all capsules created by the user' })
+  @ApiResponse({ status: 200, description: 'My capsules retrieved successfully' })
+  @ApiQuery({ name: 'page', required: false, description: 'Page number for pagination', example: 1 })
+  @ApiQuery({ name: 'limit', required: false, description: 'Number of items per page', example: 10 })
+  @ApiQuery({ name: 'statusFilter', required: false, description: 'Filter capsules by status (e.g., "Locked", "Opened")', example: 'Locked' })
+  async getMyCapsules(
+    @Request() req,
+    @Query('page') page: number = 1, // Default to page 1 if not provided
+    @Query('limit') limit: number = 10, // Default to 10 items per page if not provided
+    @Query('statusFilter') statusFilter?: string,
+  ): Promise<ApiResponseDto> {
+    const userId = req.user.id;
+
+    // Call the service to fetch capsules
+    return await this.getCapsuleService.getMyCapsules(userId, page, limit, statusFilter);
+  }
 }
+
+

@@ -35,4 +35,22 @@ export class UserController {
       message: 'Password updated successfully',
     };
   }
+
+  @Get('getUserByEmail:email')
+  @ApiOperation({ summary: 'Get user information by email' })
+  async getUserByEmail(@Request() req): Promise<ApiResponseDto> {
+    const email = req.params.email; // Extract email from the request parameters
+    const user = await this.userService.findUserByEmail(email);
+    if (!user) {
+      return {
+        statusCode: 404,
+        message: 'User not found',
+      };
+    }
+    return {
+      statusCode: 200,
+      message: 'User retrieved successfully',
+      data: user,
+    };
+  }
 }

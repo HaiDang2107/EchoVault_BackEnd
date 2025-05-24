@@ -5,12 +5,17 @@ import { UpdateAvatarDto } from '../capsule/dto';
 //import aws from 'aws-sdk';
 import * as aws from 'aws-sdk';
 import { File } from 'multer';
+import { NotificationService } from '../notification/notification.service';
+import { NotificationType } from '../notification/dto/capsuleNoti.dto';
 
 @Injectable()
 export class ProfileService {
   private s3: aws.S3;
 
-  constructor(private prisma: PrismaService) {
+  constructor(
+    private prisma: PrismaService,
+    private readonly notificationService: NotificationService
+  ) {
     this.prisma = prisma;
     this.s3 = new aws.S3({
       accessKeyId: process.env.AWS_ACCESS_KEY_ID,
@@ -43,6 +48,12 @@ export class ProfileService {
         status: 'PENDING',
       },
     });
+
+    await this.notificationService.createImmediateNotification(
+      receiverId,
+      NotificationType.FriendRequest,
+      `You have a new friend request from user ${senderId}.`,
+    )
 
     return {
       statusCode: 201,
@@ -115,6 +126,18 @@ export class ProfileService {
         { userId: senderId, friendId: receiverId },
       ],
     });
+
+    //Send notification to both users
+    await this.notificationService.createImmediateNotification(
+      senderId,
+      NotificationType.FriendRequest,
+      `Your friend request to user ${receiverId} has been accepted.`,
+    );
+    await this.notificationService.createImmediateNotification(
+      receiverId,
+      NotificationType.FriendRequest,
+      `You have accepted a friend request from user ${senderId}.`,
+    );
 
     return {
       statusCode: 200,

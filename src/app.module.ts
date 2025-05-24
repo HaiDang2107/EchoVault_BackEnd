@@ -13,6 +13,7 @@ import { AdminModule } from './module/admin/admin.module';
 
 import { CapsuleMediaModule } from './module/capsule/capsule-media.module';
 import { emailConfig } from './config/email.config';
+import { NotificationModule } from './module/notification/notification.module';
 @Module({
   imports: [
     AuthModule, 
@@ -20,6 +21,7 @@ import { emailConfig } from './config/email.config';
     PrismaModule,
     CapsuleModule,
     ProfileModule,
+    NotificationModule,
     AdminModule,
     CapsuleMediaModule,
     ConfigModule.forRoot({

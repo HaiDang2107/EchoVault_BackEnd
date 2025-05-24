@@ -1,6 +1,7 @@
 import { IsString, IsNotEmpty, IsOptional, IsArray, IsUUID, IsDate, IsInt, IsUrl, IsBoolean, Max, Min } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform, TransformFnParams } from 'class-transformer';
+import multer, {File} from 'multer';
 
 export class NewCapsuleDto {
   @ApiProperty({ description: 'The main content of the capsule' })
@@ -49,6 +50,10 @@ export class NewCapsuleDto {
   @IsDate()
   @IsNotEmpty()
   openingTime!: Date;
+
+  @ApiProperty({description: 'File associated with the capsule', type: 'string', format: 'binary' })
+  @IsOptional()
+  files? :File[];
 }
 
 export class CapsuleDto {

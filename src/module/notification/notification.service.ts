@@ -13,10 +13,22 @@ export class NotificationService {
         openingTime: Date,
         notificationInterval: number
     ): Promise<void> {
+        if (typeof openingTime === 'string') {
+            console.log('Date is a string:', openingTime);
+            // Attempt to parse the string into a Date object
+            openingTime = new Date(openingTime);
+          }
+        if (!(openingTime instanceof Date) || isNaN(openingTime.getTime())) {
+            console.log('Invalid openingTime:', openingTime);
+            throw new Error('Invalid openingTime. It must be a valid Date object.');
+          }
+
+        console.log('Capsule ID althogh not created:', capsuleId);
         const notifications: NewNotificationDto[] = [];
         const now = new Date();
         for (let i = 0; i < notificationInterval; i++) {
-            const notiTime = new Date(openingTime.getTime() - i * 24 * 60 * 60 * 1000);
+            const notiTime = new Date(openingTime);
+            notiTime.setDate(notiTime.getDate() - i);           
             if (notiTime > now) {
                 notifications.push({
                     userId: userId,
@@ -55,6 +67,7 @@ export class NotificationService {
                 isRead: false,
             },
         });
+        console.log(`Notification created for user ${userId}: ${message}`);
     }
 
     
@@ -87,10 +100,20 @@ export class NotificationService {
 
         // Fetch unread and sent notifications for the user, limited to 10 latest
         const notifications = await this.prisma.notifications.findMany({
-            where: { userId: userId, isRead: false, isSent: true },
+            where: { userId: userId, isSent: true },
             orderBy: { notiTime: 'desc' },
             take: 10,
         });
+
+        // Mark all fetched notifications as read
+        const notificationIds = notifications.map((notification) => notification.notificationId);
+        if (notificationIds.length > 0) {
+            await this.prisma.notifications.updateMany({
+                where: { notificationId: { in: notificationIds } },
+                data: { isRead: true },
+            });
+        }
+
         return {
             statusCode: 200,
             message: 'Success',

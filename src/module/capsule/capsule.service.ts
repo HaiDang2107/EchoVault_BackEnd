@@ -32,6 +32,8 @@ import * as aws from 'aws-sdk';
 import { PrismaClient } from '@prisma/client';
 import express, { Request, Response } from 'express';
 import multer, {File} from 'multer';
+import { NotificationService } from '../notification/notification.service';
+
 
 const timeZone = 'Asia/Bangkok'; // GMT+7
 
@@ -41,7 +43,10 @@ export class CapsuleService {
   private prisma: PrismaService;
   private s3: aws.S3; // Khai báo kiểu cụ thể
 
-  constructor(prisma: PrismaService) {
+  constructor(
+    prisma: PrismaService,
+    private readonly notificationService: NotificationService, // Inject NotificationService
+  ) {
     this.prisma = prisma;
 
     const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
@@ -61,6 +66,8 @@ export class CapsuleService {
   async createCapsule(dto: Omit<NewCapsuleDto, 'userId'>, userId: string): Promise<ApiResponseDto> {
     return await this.prisma.$transaction(async (prisma) => {
       // Step 1: Create the capsule
+
+      
       const capsule = await prisma.capsule.create({
         data: {
           userId, // Set the owner of the capsule
@@ -75,7 +82,7 @@ export class CapsuleService {
         },
       });
   
-      // Step 4: Add the owner as a viewer (if the capsule is private)
+      // Step 2: Add the owner as a viewer (if the capsule is private)
       if (dto.privacy === 'Private') {
         // Ensure viewers are provided for private capsules
         if (!dto.viewers || dto.viewers.length === 0) {
@@ -99,7 +106,7 @@ export class CapsuleService {
         });
       }
   
-      // Step 5: Create recall questions
+      // Step 3: Create recall questions
       if (dto.recallQuestions && dto.recallQuestions.length > 0) {
         for (const questionDto of dto.recallQuestions) {
           await prisma.recallQuestion.create({
@@ -116,39 +123,52 @@ export class CapsuleService {
           });
         }
       }
-  
+
+      // Step 4: Store media if provided
+      if (dto.files && dto.files.length > 0) {
+
+        for (const file of dto.files) {
+          // Upload each file to S3
+          const params = {
+            Bucket: 'testecho123',
+            Key: `capsules/${Date.now()}-${file.originalname}`,
+            Body: file.buffer,
+            ContentType: file.mimetype,
+          };
+
+          const data = await this.s3.upload(params).promise();
+          const imageUrl = data.Location;
+
+          // Insert an instance in the CapsuleMedia table
+          const media = await prisma.capsuleMedia.create({
+            data: {
+              mediaId: crypto.randomUUID(),
+              capsuleId: capsule.id, // Use the capsule ID
+              mediaUrl: imageUrl,
+              mediaType: file.mimetype,
+              uploadedBy: userId, // The user who uploaded the file
+              uploadedAt: new Date(),
+              metadata: '{"resolution": "1920x1080"}', // Example metadata
+            },
+          });
+
+        }
+
+      }
+      
+      //Step 5: Create notification for the capsule
+      await this.notificationService.createScheduledNotificationsForCapsule(
+        capsule.id,
+        userId,
+        dto.openingTime,
+        dto.notificationInterval,
+      );
+
       // Return success response
       return { statusCode: 201, message: 'Capsule created successfully.', capsuleID: capsule.id } as ApiResponseDto;
     });
   }
 
-  async storeMedia(
-    capsuleId: string,
-    userId: string,
-    mediaUrls: string[],
-  ): Promise<void> {
-    await this.prisma.capsuleMedia.createMany({
-      data: mediaUrls.map((mediaUrl) => ({
-        capsuleId,
-        mediaUrl,
-        mediaType: this.getMediaType(mediaUrl), // Determine media type (e.g., image, video)
-        uploadedBy: userId,
-        uploadedAt: new Date('yyyy-MM-dd HH:mm:ss'), // Convert to UTC
-      })),
-    });
-  }
-
-  private getMediaType(mediaUrl: string): string {
-    const extension = mediaUrl.split('.').pop()?.toLowerCase() ?? '';
-    if (['jpg', 'jpeg', 'png', 'gif'].includes(extension)) {
-      return 'image';
-    } else if (['mp4', 'mov', 'avi'].includes(extension)) {
-      return 'video';
-    } else if (['mp3', 'wav'].includes(extension)) {
-      return 'audio';
-    }
-    return 'unknown';
-  }
 
   async createRecallQuestion(dto: NewRecallQuestionDto) {
     return await this.prisma.recallQuestion.create({

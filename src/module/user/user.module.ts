@@ -4,10 +4,12 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthModule } from '../auth/auth.module';
 import { UserController } from './user.controller';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
   imports: [
     PrismaModule, 
+    NotificationModule,
     forwardRef(() => AuthModule), // Để tránh vòng lặp giữa các module
   ],
   controllers: [UserController],

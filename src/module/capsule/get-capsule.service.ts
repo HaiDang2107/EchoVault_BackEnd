@@ -88,12 +88,34 @@ export class GetCapsuleService {
       } as ApiResponseDto;
     }
 
-    // async getMyCapsule(userId: string): Promise<ApiResponseDto> {
-    //   const capsule = await this.prisma.capsule.findUnique({
-    //     where: {
-    //       userId,
-    //       },
-    //       include: {
-
-    // }
+    async getMyCapsules(userId: string, page: number, limit: number, statusFilter?: string): Promise<ApiResponseDto> {
+      const capsules = await this.prisma.capsule.findMany({
+        where: {
+          userId: userId,
+          ...(statusFilter && { status: statusFilter }), // Apply status filter only if provided
+        },
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: {
+          createdAt: 'desc',
+        },
+        include: {
+          comments: true, // Include comments
+          reactions: true, // Include reactions
+          capsuleMedia: true, // Include media
+          viewers: { // Include viewers of the capsule
+            include: {
+              user: true, // Include user details for each viewer
+            },
+          },
+          recallQuestions: true, // Include recall questions
+        },
+      });
+    
+      return {
+        statusCode: 200,
+        message: 'Success',
+        data: capsules,
+      } as ApiResponseDto;
+    }
   }
