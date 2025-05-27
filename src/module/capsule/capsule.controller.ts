@@ -190,9 +190,6 @@ export class CapsuleController {
     @Query('statusFilter') statusFilter?: string,
   ): Promise<ApiResponseDto> {
     const userId = req.user.id;
-    console.log(
-      `getCapsulesDashboard - userId: ${userId}, page: ${page}, limit: ${limit}, statusFilter: ${statusFilter}`,
-    );
     return await this.capsuleService.getCapsulesDashboard(
       userId,
       page,

@@ -10,7 +10,6 @@ export class DashboardService {
     async getCapsulesDashboard (userId: string, page: number, limit: number, statusFilter?: string): Promise<ApiResponseDto> {
         const capsules = await getYourViewCapsuleQuery(this.prisma, userId, page, limit, statusFilter);
         //Need the skp atribute as we load data eventually
-        console.log("capsule",capsules);
     
         // Fetch active advertisements
         const advertisements = await this.prisma.$queryRaw<any[]>`

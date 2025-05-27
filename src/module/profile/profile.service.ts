@@ -232,16 +232,25 @@ export class ProfileService {
       });
     }
 
-  async getUserFriends(userId: string): Promise<ApiResponseDto> {
-    const friends = await this.prisma.$queryRaw`
-      SELECT * FROM get_user_friends(${userId}::uuid);
-    `;
-    return {
-      statusCode: 200,
-      message: 'Success',
-      data: friends,
-    } as ApiResponseDto;
-  }
+    async getUserFriends(userId: string): Promise<ApiResponseDto> {
+      const friends = await this.prisma.$queryRawUnsafe(`
+        SELECT u.*
+        FROM "Friend" f
+        JOIN "User" u ON u."id" = f."friendId"
+        WHERE f."userId" = '${userId}'
+        UNION
+        SELECT u.*
+        FROM "Friend" f
+        JOIN "User" u ON u."id" = f."userId"
+        WHERE f."friendId" = '${userId}';
+      `);
+    
+      return {
+        statusCode: 200,
+        message: 'Success',
+        data: friends,
+      } as ApiResponseDto;
+    }
 
   async getNotifications(userId: string): Promise<ApiResponseDto> {
     const notifications = await this.prisma.$queryRaw`

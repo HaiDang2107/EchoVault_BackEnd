@@ -10,6 +10,18 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 export class UserController {
   constructor(private userService: UserService) {}
 
+  @Get('random-users')
+  @ApiOperation({ summary: 'Get random friends' })
+  async getRandomUsers(@Request() req): Promise<ApiResponseDto> {
+    const userId = req.user.id; // Extract user ID from the JWT token
+    const randomFriends = await this.userService.getListOfUsersRandomly(userId);
+    return {
+      statusCode: 200,
+      message: 'Random friends retrieved successfully',
+      data: randomFriends,
+    };
+  }
+
   @Get('profile')
   @ApiOperation({ summary: 'Get user information by JWT token' })
   async getUserByToken(@Request() req): Promise<ApiResponseDto> {

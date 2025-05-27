@@ -248,4 +248,20 @@ export class UserService {
       orderBy: { createdAt: 'desc' },
     });
   }
+
+  async getListOfUsersRandomly(userId: string) {
+    const users = await this.prisma.$queryRawUnsafe(`
+      SELECT * FROM "User"
+      WHERE "isActive" = true
+        AND "id" != '${userId}' -- Exclude the requesting user
+        AND "id" NOT IN (
+          SELECT "friendId" FROM "Friend" WHERE "userId" = '${userId}'
+          UNION
+          SELECT "userId" FROM "Friend" WHERE "friendId" = '${userId}'
+        )
+      ORDER BY RANDOM()
+      LIMIT 10
+    `);
+    return users;
+  }
 }
