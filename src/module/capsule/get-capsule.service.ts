@@ -100,7 +100,11 @@ export class GetCapsuleService {
           createdAt: 'desc',
         },
         include: {
-          comments: true, // Include comments
+          comments: {
+            include: {
+              user: true,
+            }
+          },
           reactions: true, // Include reactions
           capsuleMedia: true, // Include media
           viewers: { // Include viewers of the capsule
