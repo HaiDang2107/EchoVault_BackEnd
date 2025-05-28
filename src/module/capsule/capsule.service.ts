@@ -14,7 +14,6 @@ import {
   CapsuleDto,
   DeleteCapsuleDto,
   CreateCapsuleDto,
-  UpdateAvatarDto,
   UpdateAvatarCapsuleDto,
 } from './dto/capsule.dto';
 import {
@@ -202,6 +201,7 @@ export class CapsuleService {
         input: [{ role: 'user', content: prompt }],
       });
       const theme = response.output_text;
+      console.log("Theme", theme);
       if (!theme) {
         throw new Error('No response from OpenAI for theme');
       }
@@ -606,7 +606,7 @@ export class CapsuleService {
   `;
 
   // Inject ads after every X capsules
-  const INSERT_AFTER = 2;
+  const INSERT_AFTER = 5;
   const result: any[] = [];
   let adIndex = 0;
 
