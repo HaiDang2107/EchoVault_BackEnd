@@ -71,7 +71,7 @@ export class AuthService {
 
     await this.userService.createPasswordResetToken(token, user.id, expiresAt);
 
-    const resetLink = `https://echov-2d0b3.web.app/reset-password?token=${token}`;
+    const resetLink = `https://echov-2d0b3.web.app/reset-password/${token}`;
     const subject = 'Reset your password';
     const html = `Click this link to reset your password: <a href="${resetLink}">${resetLink}</a>`;
 
