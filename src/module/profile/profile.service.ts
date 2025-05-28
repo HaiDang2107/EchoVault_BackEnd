@@ -191,10 +191,9 @@ export class ProfileService {
   }
 
   async uploadAvatar(
-    @Request() req,
+    userId: string,
     file: File
   ) {
-      const userId = req.user.id; // Lấy userId từ request
   
       // Upload ảnh lên S3
       const params = {

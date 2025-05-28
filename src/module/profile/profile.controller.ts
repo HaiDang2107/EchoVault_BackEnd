@@ -14,7 +14,6 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody, ApiResponse } from '@nes
 import { ProfileService } from './profile.service';
 import { ApiResponseDto } from './dto/response.dto';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
-import { UpdateAvatarDto } from '../capsule/dto';
 import { FileInterceptor } from 'node_modules/@nestjs/platform-express';
 
 @ApiTags('Profile') // Group in Swagger UI
@@ -26,21 +25,22 @@ export class ProfileController {
   
   @Post('uploadAvatar')
   @ApiOperation({ summary: 'Upload an avatar for a user' })
-  @ApiBody({ type: UpdateAvatarDto })
+  @ApiBody({ schema: { type: 'object', properties: { avatar: { type: 'string', format: 'binary' } } } })
   @ApiResponse({ status: 201, description: 'Avatar uploaded successfully' })
   @UseInterceptors(FileInterceptor('avatar'))
   async uploadAvatar(
+    @Request() req,
     @UploadedFile() file: File,
-    @Body() body: UpdateAvatarDto,
   ) {
     if (!file) {
       throw new BadRequestException('No avatar file uploaded');
     }
+    const userId = req.user.id;
 
     try {
-      const result = await this.profileService.uploadAvatar(body, file);
+      const result = await this.profileService.uploadAvatar(userId, file);
       return result;
-    } catch (error:any ) {
+    } catch (error: any) {
       console.error(error);
       throw new InternalServerErrorException('Error uploading profile avatar', error.message);
     }
