@@ -19,17 +19,17 @@ export class AuthController {
 
   @UseGuards(GoogleAuthGuard) // Xử lí authorization code
   @Get('google/redirect')
-  async googleAuthCallback(@Request() req) { // req.user sẽ chứa thông tin trả về từ hàm validate
+  async googleAuthCallback(@Request() req, @Res() res: Response) { // req.user sẽ chứa thông tin trả về từ hàm validate
     const user = req.user;
     const ipAddress = req.ip || req.headers['x-forwarded-for'];
     const userAgent = req.headers['user-agent'];
 
     const token = await this.authService.login(user, ipAddress, userAgent);
-    return { message: 'Log in with google successfully', token: token.access_token };
-    // Ở đây bạn có thể redirect người dùng về frontend cùng với token
-    // Ví dụ:
-    // const frontendUrl = 'YOUR_FRONTEND_URL'; // Thay bằng URL frontend của bạn
-    // return res.redirect(`${frontendUrl}?access_token=${token.access_token}`);
+
+    //redirect người dùng về frontend cùng với token
+    console.log('Login successful:', user.id);
+    const frontendUrl = 'https://echov-2d0b3.web.app/'; // Replace with your actual frontend URL
+    return res.redirect(`${frontendUrl}?access_token=${token.access_token}`);
   }
 
   @Post('signup')
