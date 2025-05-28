@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { config } from 'dotenv';
+import * as bodyParser from 'body-parser';
 config(); // Load .env file
 console.log(process.env.DATABASE_URL)
 async function bootstrap() {
@@ -26,6 +27,10 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document); // Accessible at /api
+
+  // Increase payload size limit
+  app.use(bodyParser.json({ limit: '10mb' })); // Adjust the limit as needed
+  app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 
   // Lắng nghe cổng từ biến môi trường PORT (Render cung cấp)
   const port = process.env.PORT || 3333;

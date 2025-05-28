@@ -1,7 +1,6 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Request } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApiResponseDto } from './dto/response.dto';
-import { UpdateAvatarDto } from '../capsule/dto';
 //import aws from 'aws-sdk';
 import * as aws from 'aws-sdk';
 import { File } from 'multer';
@@ -191,15 +190,11 @@ export class ProfileService {
     } as ApiResponseDto;
   }
 
-  async uploadAvatar(dto: UpdateAvatarDto, file: File) {
-      // Kiểm tra user tồn tại
-      const user = await this.prisma.user.findUnique({
-        where: { id: dto.userId },
-      });
-  
-      if (!user) {
-        throw new BadRequestException('User not found');
-      }
+  async uploadAvatar(
+    @Request() req,
+    file: File
+  ) {
+      const userId = req.user.id; // Lấy userId từ request
   
       // Upload ảnh lên S3
       const params = {
@@ -214,13 +209,13 @@ export class ProfileService {
   
       // Cập nhật avatarUrl trong bảng User
       await this.prisma.user.update({
-        where: { id: dto.userId },
+        where: { id: userId },
         data: { avatarUrl },
       });
   
       return {
         message: 'Avatar uploaded successfully',
-        userId: dto.userId,
+        userId: userId,
         avatarUrl,
       };
     }

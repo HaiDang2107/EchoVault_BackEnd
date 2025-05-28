@@ -22,13 +22,11 @@ export class NewCapsuleDto {
 
   @ApiProperty({ description: 'Background theme of the capsule' })
   @IsString()
-  @IsNotEmpty()
   theme?: string;
 
   @ApiProperty({ description: 'Description of the capsule' })
   @IsString()
-  @IsNotEmpty()
-  description!: string;
+  description?: string;
 
   @ApiProperty({ description: 'Visibility of the capsule', enum: ['public', 'private'] })
   @IsString()
@@ -260,11 +258,6 @@ export class CreateCapsuleDto {
 
   @IsString()
   capsuleId!: string;
-}
-
-export class UpdateAvatarDto {
-  @IsString()
-  userId!: string;
 }
 
 

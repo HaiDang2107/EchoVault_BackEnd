@@ -32,6 +32,7 @@ import * as aws from 'aws-sdk';
 import { PrismaClient } from '@prisma/client';
 import express, { Request, Response } from 'express';
 import multer, {File} from 'multer';
+import OpenAI from 'openai';
 import { NotificationService } from '../notification/notification.service';
 
 
@@ -64,16 +65,19 @@ export class CapsuleService {
     });
   }
   async createCapsule(dto: Omit<NewCapsuleDto, 'userId'>, userId: string): Promise<ApiResponseDto> {
+    // Step 1: Generate theme and description using OpenAI
+    const theme = await this.generateTheme(dto.content);
+    const description = await this.generateDescription(dto.content);
+    
     return await this.prisma.$transaction(async (prisma) => {
-      // Step 1: Create the capsule
 
-      
+      // Step 2: Create the capsule
       const capsule = await prisma.capsule.create({
         data: {
           userId, // Set the owner of the capsule
           content: dto.content,
-          theme: dto.theme ?? '',
-          description: dto.description,
+          theme,
+          description,
           privacy: dto.privacy,
           notificationInterval: dto.notificationInterval,
           openingTime: dto.openingTime,
@@ -82,7 +86,7 @@ export class CapsuleService {
         },
       });
   
-      // Step 2: Add the owner as a viewer (if the capsule is private)
+      // Step 3: Add the owner as a viewer (if the capsule is private)
       if (dto.privacy === 'Private') {
         // Ensure viewers are provided for private capsules
         if (!dto.viewers || dto.viewers.length === 0) {
@@ -106,7 +110,7 @@ export class CapsuleService {
         });
       }
   
-      // Step 3: Create recall questions
+      // Step 4: Create recall questions
       if (dto.recallQuestions && dto.recallQuestions.length > 0) {
         for (const questionDto of dto.recallQuestions) {
           await prisma.recallQuestion.create({
@@ -124,7 +128,7 @@ export class CapsuleService {
         }
       }
 
-      // Step 4: Store media if provided
+      // Step 5: Store media if provided
       if (dto.files && dto.files.length > 0) {
 
         for (const file of dto.files) {
@@ -156,7 +160,7 @@ export class CapsuleService {
 
       }
       
-      //Step 5: Create notification for the capsule
+      //Step 6: Create notification for the capsule
       await this.notificationService.createScheduledNotificationsForCapsule(
         capsule.id,
         userId,
@@ -183,6 +187,55 @@ export class CapsuleService {
         explaination: dto.explaination ?? '',
       },
     });
+  }
+
+  async generateTheme(content: string): Promise<string> {
+    try {
+      const openai = new OpenAI({
+        apiKey: process.env.AI_API_KEY, // Ensure this is set in your .env file
+      });
+  
+      const prompt = `Generate a theme (2 words) for the following content: "${content}". The theme should be concise and relevant to the content for example: "Love Story", "Tech Innovation", "Healthy Living", "Match Description".`;
+  
+      const response = await openai.responses.create({
+        model: 'gpt-3.5-turbo', // Use GPT-3.5/4 model
+        input: [{ role: 'user', content: prompt }],
+      });
+      const theme = response.output_text;
+      if (!theme) {
+        throw new Error('No response from OpenAI for theme');
+      }
+  
+      return theme || 'Default Theme'; // Fallback to default if theme is missing
+    } catch (error) {
+      console.error('Error generating theme:', error);
+      return 'Default Theme';
+    }
+  }
+
+  async generateDescription(content: string): Promise<string> {
+    try {
+      const openai = new OpenAI({
+        apiKey: process.env.AI_API_KEY, // Ensure this is set in your .env file
+      });
+  
+      const prompt = `Generate a description for the following content: "${content}"`;
+  
+      const response = await openai.responses.create({
+        model: 'gpt-3.5-turbo', // Use GPT-3.5/4 model
+        input: [{ role: 'user', content: prompt }],
+      });
+  
+      const description = response.output_text;
+      if (!description) {
+        throw new Error('No response from OpenAI for description');
+      }
+  
+      return description || 'Default Description'; // Fallback to default if description is missing
+    } catch (error) {
+      console.error('Error generating description:', error);
+      return 'Default Description';
+    }
   }
 
   async deleteCapsule(dto: DeleteCapsuleDto): Promise<ApiResponseDto> {
@@ -332,6 +385,17 @@ export class CapsuleService {
   async getCapsuleQuestions(capsuleId: string): Promise<ApiResponseDto> {
     const questions = await this.prisma.recallQuestion.findMany({
       where: { capsuleId },
+      select: {
+        id: true,
+        capsuleId: true,
+        question: true,
+        choicesA: true,
+        choicesB: true,
+        choicesC: true,
+        choicesD: true,
+        correctAnswer: true, // Include correctAnswer
+        explaination: true,  // Include explanation
+      },
     });
     return {
       statusCode: 200,

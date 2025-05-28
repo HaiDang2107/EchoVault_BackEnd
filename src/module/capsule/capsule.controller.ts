@@ -31,7 +31,6 @@ import {
   NewRecallQuestionDto,
   DeleteCapsuleDto,
   CreateCapsuleDto,
-  UpdateAvatarDto,
   UpdateAvatarCapsuleDto,
 } from './dto/capsule.dto';
 import {
